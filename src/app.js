@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const cookieParser = require('cookie-parser');
-const authRoutes = require('./routes/auth.routes');
 
 
 connectDB();
@@ -10,7 +9,19 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+/**
+ * Routes required
+ */
+const authRoutes = require('./routes/auth.routes');
+const accountRoutes = require('./routes/account.routes');
+
+
+/**
+ * Use routes
+ */
 app.use('/api/auth', authRoutes);
+app.use('/api/accounts', accountRoutes);
+
 
 console.log('App is running');
 
