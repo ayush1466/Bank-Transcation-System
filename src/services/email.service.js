@@ -55,6 +55,7 @@ async function sendTransactionEmail(userEmail, name, transactionDetails) {
     await sendEmail(userEmail, subject, text, html);
 }
 
+
 async function sendTransactionFailureEmail(userEmail, name, transactionDetails) {
     const subject = 'Transaction Failure Notification';
     const text = `Hello ${name},\n\nWe regret to inform you that a transaction on your account has failed:\n\n${transactionDetails}\n\nPlease contact support for further assistance.\n\nBest regards,\nThe Backend Ledger Team`;

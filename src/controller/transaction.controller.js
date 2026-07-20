@@ -1,6 +1,7 @@
 const transactionModel = require('../models/transaction.model');
 const ledgerModel = require('../models/ledger.model');
 const accountModel = require('../models/account.model');
+const emailserivce = require('../services/email.service');
 const mongoose = require('mongoose');
 
 /**
@@ -16,6 +17,12 @@ const mongoose = require('mongoose');
  * 9 - commit mongodb session
  * 10 - send email notification to sender and receiver
  */
+
+/**
+ * POST /api/transactions
+ * Create a new transaction between two accounts
+ * Protected route, requires authentication
+ */
 async function createTransaction(req, res) {
 
     /**
@@ -27,10 +34,14 @@ async function createTransaction(req, res) {
         return res.status(400).json({ message: 'fromAccountId, toAccountId, amount, and idempotencyKey are required' });
     }
 
-    const fromaccount = await accountModel.findOne({ _id: fromAccountId});
-    const toaccount = await accountModel.findOne({ _id: toAccountId});
+    const fromaccount = await accountModel.findOne({
+        $or: [{ _id: fromAccountId }, { userId: fromAccountId }],
+    });
+    const toaccount = await accountModel.findOne({
+        $or: [{ _id: toAccountId }, { userId: toAccountId }],
+    });
 
-    if (!fromaccount || !toaccount) {
+    if (!toaccount || !fromaccount) {
         return res.status(404).json({ message: 'One or both accounts not found' });
     }
 
@@ -75,7 +86,7 @@ async function createTransaction(req, res) {
 
     // 4 - derive sender balance from ledger
 
-    const senderBalance = await fromaccount.getBalance(); 
+    const senderBalance =fromaccount.balance; 
 
     if (senderBalance < amount) {
         return res.status(400).json({ message: `Insufficient balance. Available: ${senderBalance}, Requested: ${amount}` });
@@ -94,16 +105,16 @@ async function createTransaction(req, res) {
         amount,
         idempotencyKey,
         status: 'PENDING',
-    }, { session });
+    });
 
-    const creditLedgerEntry = new ledgerModel({
+    const creditLedgerEntry = new ledgerModel([{
         account: toAccountId,
         transaction: transaction._id,
         amount: amount,
         type: 'CREDIT',
-    }, { session });
+    } ], { session });
 
-    transaction.save = "COMPLETED";
+    transaction.status = "COMPLETED";
     await transaction.save({ session });
 
     /**
@@ -124,14 +135,17 @@ async function createInitialFundsTransaction(req, res) {
 
 
     try {
-        const { toAccountID, amount, idempotencyKey } = req.body;
+        // `toAccountId` is the public API field. Keep `toAccountID` working for
+        // clients that used the original spelling.
+        const toAccountId = req.body.toAccountId || req.body.toAccountID;
+        const { amount, idempotencyKey } = req.body;
 
-        if (!toAccountID || amount === undefined || !idempotencyKey) {
-            return res.status(400).json({ message: 'toAccountID, amount, and idempotencyKey are required' });
+        if (!toAccountId || amount === undefined || !idempotencyKey) {
+            return res.status(400).json({ message: 'toAccountId, amount, and idempotencyKey are required' });
         }
 
-        if (!mongoose.isValidObjectId(toAccountID)) {
-            return res.status(400).json({ message: 'Invalid toAccountID' });
+        if (!mongoose.isValidObjectId(toAccountId)) {
+            return res.status(400).json({ message: 'Invalid toAccountId' });
         }
 
         const parsedAmount = Number(amount);
@@ -151,19 +165,21 @@ async function createInitialFundsTransaction(req, res) {
 
         await session.withTransaction(async () => {
             const toAccount = await accountModel.findOne({
-                _id: toAccountID,
-                status: 'active',
+                status: 'ACTIVE',
+                // Compass often displays the account owner's `userId`. Accept
+                // either that value or the account document's `_id`.
+                $or: [{ _id: toAccountId }, { userId: toAccountId }],
             }).session(session);
 
             if (!toAccount) {
-                const error = new Error('To account not found or inactive');
+                const error = new Error('Destination account not found or inactive');
                 error.statusCode = 404;
                 throw error;
             }
 
             const fromAccount = await accountModel.findOne({
                 userId: req.user._id,
-                status: 'active',
+                status: 'ACTIVE',
             }).session(session);
 
             if (!fromAccount) {
@@ -172,22 +188,23 @@ async function createInitialFundsTransaction(req, res) {
                 throw error;
             }
 
-            if (fromAccount._id.equals(toAccount._id)) {
-                const error = new Error('System account and destination account must be different');
-                error.statusCode = 400;
-                throw error;
-            }
+            const isSystemAccount = fromAccount._id.equals(toAccount._id);
 
-            const debitResult = await accountModel.updateOne(
-                { _id: fromAccount._id, balance: { $gte: parsedAmount } },
-                { $inc: { balance: -parsedAmount } },
-                { session }
-            );
+            // A system user may seed its own account. This is an issuance of
+            // initial funds, so it creates only a credit and does not debit the
+            // same account first. Funding another account remains a transfer.
+            if (!isSystemAccount) {
+                const debitResult = await accountModel.updateOne(
+                    { _id: fromAccount._id, balance: { $gte: parsedAmount } },
+                    { $inc: { balance: -parsedAmount } },
+                    { session }
+                );
 
-            if (debitResult.modifiedCount !== 1) {
-                const error = new Error('Insufficient system account balance');
-                error.statusCode = 400;
-                throw error;
+                if (debitResult.modifiedCount !== 1) {
+                    const error = new Error('Insufficient system account balance');
+                    error.statusCode = 400;
+                    throw error;
+                }
             }
 
             await accountModel.updateOne(
@@ -201,23 +218,26 @@ async function createInitialFundsTransaction(req, res) {
                 toAccountId: toAccount._id,
                 amount: parsedAmount,
                 idempotencyKey,
-                status: 'completed',
+                status: 'COMPLETED',
             }], { session }).then(([createdTransaction]) => createdTransaction);
 
-            await ledgerModel.create([
-                {
+            const ledgerEntries = [{
+                account: toAccount._id,
+                transaction: transaction._id,
+                amount: parsedAmount,
+                type: 'Credit',
+            }];
+
+            if (!isSystemAccount) {
+                ledgerEntries.unshift({
                     account: fromAccount._id,
                     transaction: transaction._id,
                     amount: parsedAmount,
                     type: 'Debit',
-                },
-                {
-                    account: toAccount._id,
-                    transaction: transaction._id,
-                    amount: parsedAmount,
-                    type: 'Credit',
-                },
-            ], { session });
+                });
+            }
+
+            await ledgerModel.create(ledgerEntries, { session });
         });
 
         return res.status(201).json({
