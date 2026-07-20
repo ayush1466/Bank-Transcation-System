@@ -23,7 +23,7 @@ const ledgerSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ['Credit', 'Debit'],
+            enum: ['CREDIT', 'DEBIT'],
             required: true,
             immutable: true,
         }
