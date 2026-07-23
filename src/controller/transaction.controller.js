@@ -1,6 +1,7 @@
 const transactionModel = require("../models/transaction.model");
 const ledgerModel = require("../models/ledger.model");
 const accountModel = require("../models/account.model");
+const userModel = require("../models/user.model");
 const emailserivce = require("../services/email.service");
 const mongoose = require("mongoose");
 
@@ -43,6 +44,20 @@ async function createTransaction(req, res) {
       });
   }
 
+  if (
+    !mongoose.isValidObjectId(fromAccountId) ||
+    !mongoose.isValidObjectId(toAccountId)
+  ) {
+    return res.status(400).json({ message: "Invalid account id" });
+  }
+
+  const parsedAmount = Number(amount);
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    return res
+      .status(400)
+      .json({ message: "amount must be a positive number" });
+  }
+
   const fromaccount = await accountModel.findOne({
     $or: [{ _id: fromAccountId }, { userId: fromAccountId }],
   });
@@ -52,6 +67,20 @@ async function createTransaction(req, res) {
 
   if (!toaccount || !fromaccount) {
     return res.status(404).json({ message: "One or both accounts not found" });
+  }
+
+  // Authorization: the caller may only send from their own account.
+  if (!fromaccount.userId.equals(req.userId)) {
+    return res
+      .status(403)
+      .json({ message: "You do not own the source account" });
+  }
+
+  // A transfer to the same account is a no-op that still writes ledger rows.
+  if (fromaccount._id.equals(toaccount._id)) {
+    return res
+      .status(400)
+      .json({ message: "Cannot transfer to the same account" });
   }
 
   /**
@@ -99,11 +128,11 @@ async function createTransaction(req, res) {
    * 4 - derive sender balance
    */
   const senderBalance = fromaccount.balance;
-  if (senderBalance < amount) {
+  if (senderBalance < parsedAmount) {
     return res
       .status(400)
       .json({
-        message: `Insufficient balance. Available: ${senderBalance}, Requested: ${amount}`,
+        message: `Insufficient balance. Available: ${senderBalance}, Requested: ${parsedAmount}`,
       });
   }
 
@@ -117,8 +146,8 @@ async function createTransaction(req, res) {
     await session.withTransaction(async () => {
       // Debit sender — guard with balance check to avoid race conditions
       const debitResult = await accountModel.updateOne(
-        { _id: fromaccount._id, balance: { $gte: amount } },
-        { $inc: { balance: -amount } },
+        { _id: fromaccount._id, balance: { $gte: parsedAmount } },
+        { $inc: { balance: -parsedAmount } },
         { session },
       );
 
@@ -131,7 +160,7 @@ async function createTransaction(req, res) {
       // Credit receiver
       await accountModel.updateOne(
         { _id: toaccount._id },
-        { $inc: { balance: amount } },
+        { $inc: { balance: parsedAmount } },
         { session },
       );
 
@@ -142,7 +171,7 @@ async function createTransaction(req, res) {
             {
               fromAccountId: fromaccount._id,
               toAccountId: toaccount._id,
-              amount,
+              amount: parsedAmount,
               idempotencyKey,
               status: "COMPLETED",
             },
@@ -157,21 +186,17 @@ async function createTransaction(req, res) {
           {
             account: fromaccount._id,
             transaction: transaction._id,
-            amount,
+            amount: parsedAmount,
             type: "DEBIT",
           },
           {
             account: toaccount._id,
             transaction: transaction._id,
-            amount,
+            amount: parsedAmount,
             type: "CREDIT",
           },
         ],
         { session, ordered: true },
-
-        await(() => {
-            return new Promise((resolve) => settimeout(resolve, 100))
-        })()
       );
     });
   } catch (error) {
@@ -193,13 +218,24 @@ async function createTransaction(req, res) {
   }
 
   /**
-   * 10 - send email notification
+   * 10 - send email notification (best-effort; must not fail the request)
    */
-  await emailserivce.sendTransactionEmail(
-    fromaccount.userEmail,
-    fromaccount.name,
-    `You sent ${amount} to ${toaccount.name}`,
-  );
+  try {
+    const [fromUser, toUser] = await Promise.all([
+      userModel.findById(fromaccount.userId).select("email name"),
+      userModel.findById(toaccount.userId).select("email name"),
+    ]);
+
+    if (fromUser?.email) {
+      await emailserivce.sendTransactionEmail(
+        fromUser.email,
+        fromUser.name,
+        `You sent ${parsedAmount} to ${toUser?.name || "another account"}`,
+      );
+    }
+  } catch (err) {
+    console.error("Failed to send transaction email:", err);
+  }
 
   return res.status(201).json({
     message: "Transaction created successfully",
@@ -321,7 +357,7 @@ async function createInitialFundsTransaction(req, res) {
           account: toAccount._id,
           transaction: transaction._id,
           amount: parsedAmount,
-          type: "Credit",
+          type: "CREDIT",
         },
       ];
 
@@ -330,7 +366,7 @@ async function createInitialFundsTransaction(req, res) {
           account: fromAccount._id,
           transaction: transaction._id,
           amount: parsedAmount,
-          type: "Debit",
+          type: "DEBIT",
         });
       }
 
