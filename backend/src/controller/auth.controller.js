@@ -16,7 +16,7 @@ async function register(req, res) {
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.cookie('token', token)
-        res.status(201).json({ message: 'User registered successfully', user: { id: user._id, name: user.name, email: user.email } });
+        res.status(201).json({ message: 'User registered successfully', user: { id: user._id, name: user.name, email: user.email, systemUser: user.systemUser } });
 
         // Send registration email
         await emailservice.sendRegistrationEmail(user.email, user.name);
@@ -31,7 +31,7 @@ async function login(req, res) {
     try {
         const { email, password } = req.body;
 
-        const user = await User.findOne({email}).select('+password'); // Include password field in the query result
+        const user = await User.findOne({email}).select('+password +systemUser'); // Include password + systemUser in the query result
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
@@ -46,7 +46,7 @@ async function login(req, res) {
 
         res.cookie('token', token, { httpOnly: true });
 
-        res.status(200).json({ message: 'Login successful', user: { id: user._id, name: user.name, email: user.email } });
+        res.status(200).json({ message: 'Login successful', user: { id: user._id, name: user.name, email: user.email, systemUser: user.systemUser } });
     }
     catch (error) {
         console.log(error);

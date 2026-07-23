@@ -16,7 +16,7 @@ router.post('/', authMiddleware.authenticateToken, accountController.createAccou
 // - Routes GET /api/accounts/
 // - Get every account in the database
 
-router.get('/', authMiddleware.authenticateToken, accountController.getAllAccounts);
+router.get('/', authMiddleware.authenticateToken, accountController.getUserAccounts);
 
 // System-only alias for clients that explicitly require a privileged endpoint.
 router.get('/all', authMiddleware.SystemUser, accountController.getAllAccounts);
