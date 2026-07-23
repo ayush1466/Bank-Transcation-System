@@ -1,0 +1,24 @@
+# Bank Transaction System — Requirements
+#
+# Note: this is a Node.js project. The authoritative dependency list is
+# package.json (installed with `npm install`). This file is a human-readable
+# summary of everything needed to run the project.
+
+# ─── System prerequisites ───────────────────────────────────
+Node.js >= 18
+npm >= 9
+MongoDB (replica set — required for transactions; MongoDB Atlas works)
+Gmail account with OAuth2 credentials (for email notifications)
+
+# ─── Runtime dependencies (npm) ─────────────────────────────
+express@^5.2.1          # HTTP server / routing
+mongoose@^9.7.3         # MongoDB ODM
+jsonwebtoken@^9.0.3     # JWT auth tokens
+bcrypt@^6.0.0           # password hashing
+bcryptjs@^3.0.3         # password hashing (pure JS)
+cookie-parser@^1.4.7    # parse auth cookie
+dotenv@^17.4.2          # load .env config
+nodemailer@^9.0.3       # email notifications
+
+# ─── Install ────────────────────────────────────────────────
+# npm install
