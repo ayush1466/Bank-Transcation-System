@@ -3,7 +3,76 @@ const ledgerModel = require("../models/ledger.model");
 const accountModel = require("../models/account.model");
 const userModel = require("../models/user.model");
 const emailserivce = require("../services/email.service");
+const otpservice = require("../services/otp.service");
 const mongoose = require("mongoose");
+
+/**
+ * POST /api/transactions/request-otp
+ * Step 1 of a transfer: lightly validate the transfer and email the sender a
+ * code bound to this specific recipient + amount.
+ */
+async function requestTransferOtp(req, res) {
+  try {
+    const { fromAccountId, toAccountId, amount } = req.body;
+
+    if (!fromAccountId || !toAccountId || amount === undefined) {
+      return res
+        .status(400)
+        .json({ message: "fromAccountId, toAccountId and amount are required" });
+    }
+
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      return res
+        .status(400)
+        .json({ message: "amount must be a positive number" });
+    }
+
+    const fromaccount = await accountModel.findOne({
+      $or: [{ _id: fromAccountId }, { userId: fromAccountId }],
+    });
+    if (!fromaccount) {
+      return res.status(404).json({ message: "Source account not found" });
+    }
+    if (!fromaccount.userId.equals(req.userId)) {
+      return res
+        .status(403)
+        .json({ message: "You do not own the source account" });
+    }
+
+    const toaccount = await accountModel.findOne({
+      $or: [{ _id: toAccountId }, { userId: toAccountId }],
+    });
+    if (!toaccount) {
+      return res.status(404).json({ message: "Recipient account not found" });
+    }
+    if (fromaccount._id.equals(toaccount._id)) {
+      return res
+        .status(400)
+        .json({ message: "Cannot transfer to the same account" });
+    }
+    if (fromaccount.balance < parsedAmount) {
+      return res.status(400).json({
+        message: `Insufficient balance. Available: ${fromaccount.balance}, Requested: ${parsedAmount}`,
+      });
+    }
+
+    await otpservice.generateAndSend({
+      email: req.user.email,
+      name: req.user.name,
+      purpose: "TRANSFER",
+      // Bind the code to this exact recipient + amount.
+      context: { toAccountId: String(toAccountId), amount: parsedAmount },
+    });
+
+    return res
+      .status(200)
+      .json({ message: `Verification code sent to ${req.user.email}` });
+  } catch (error) {
+    console.error("Failed to send transfer OTP:", error);
+    return res.status(400).json({ message: error.message });
+  }
+}
 
 /**
  * create a new transaction between two accounts
@@ -28,7 +97,7 @@ async function createTransaction(req, res) {
   /**
    * 1 - Validate request body
    */
-  const { fromAccountId, toAccountId, amount, idempotencyKey } = req.body;
+  const { fromAccountId, toAccountId, amount, idempotencyKey, otp } = req.body;
 
   if (
     !fromAccountId ||
@@ -113,6 +182,30 @@ async function createTransaction(req, res) {
     if (isTransactionExists.status === "REVERSED") {
       return res.status(200).json({ message: "Transaction has been reversed" });
     }
+  }
+
+  /**
+   * 2b - verify the emailed OTP (bound to this recipient + amount).
+   * Placed after the idempotency check so a safe retry of an already-processed
+   * transfer doesn't require a fresh code.
+   */
+  const otpResult = await otpservice.verify({
+    email: req.user.email,
+    purpose: "TRANSFER",
+    code: otp,
+  });
+  if (!otpResult.ok) {
+    return res.status(400).json({ message: otpResult.message });
+  }
+  const boundContext = otpResult.context || {};
+  if (
+    String(boundContext.toAccountId) !== String(toAccountId) ||
+    Number(boundContext.amount) !== parsedAmount
+  ) {
+    return res.status(400).json({
+      message:
+        "This code doesn't match the transfer details. Please request a new one.",
+    });
   }
 
   /**
@@ -226,13 +319,29 @@ async function createTransaction(req, res) {
       userModel.findById(toaccount.userId).select("email name"),
     ]);
 
+    const notifications = [];
+
     if (fromUser?.email) {
-      await emailserivce.sendTransactionEmail(
-        fromUser.email,
-        fromUser.name,
-        `You sent ${parsedAmount} to ${toUser?.name || "another account"}`,
+      notifications.push(
+        emailserivce.sendTransactionEmail(
+          fromUser.email,
+          fromUser.name,
+          `You sent ${parsedAmount} to ${toUser?.name || "another account"}`,
+        ),
       );
     }
+
+    if (toUser?.email) {
+      notifications.push(
+        emailserivce.sendTransactionEmail(
+          toUser.email,
+          toUser.name,
+          `You received ${parsedAmount} from ${fromUser?.name || "another account"}`,
+        ),
+      );
+    }
+
+    await Promise.all(notifications);
   } catch (err) {
     console.error("Failed to send transaction email:", err);
   }
@@ -241,6 +350,75 @@ async function createTransaction(req, res) {
     message: "Transaction created successfully",
     transaction,
   });
+}
+
+/**
+ * GET /api/transactions
+ * List the authenticated user's transactions (most recent first).
+ * Each row is shaped from the caller's perspective: DEBIT when they sent
+ * the money, CREDIT when they received it, along with the counterparty name.
+ * Protected route, requires authentication.
+ */
+async function getUserTransactions(req, res) {
+  try {
+    const accounts = await accountModel
+      .find({ userId: req.userId })
+      .select("_id");
+    const accountIds = accounts.map((a) => a._id);
+
+    if (accountIds.length === 0) {
+      return res.status(200).json({ transactions: [] });
+    }
+
+    // Cap the page size so a busy account can't return an unbounded payload.
+    const limit = Math.min(Number(req.query.limit) || 50, 100);
+
+    const transactions = await transactionModel
+      .find({
+        $or: [
+          { fromAccountId: { $in: accountIds } },
+          { toAccountId: { $in: accountIds } },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate({
+        path: "fromAccountId",
+        select: "userId",
+        populate: { path: "userId", select: "name email" },
+      })
+      .populate({
+        path: "toAccountId",
+        select: "userId",
+        populate: { path: "userId", select: "name email" },
+      })
+      .lean();
+
+    const ownedIds = new Set(accountIds.map((id) => id.toString()));
+
+    const shaped = transactions.map((t) => {
+      // The caller "sent" the money when they own the source account.
+      const isDebit =
+        t.fromAccountId && ownedIds.has(t.fromAccountId._id.toString());
+      const counterpartyAccount = isDebit ? t.toAccountId : t.fromAccountId;
+      const counterparty = counterpartyAccount?.userId;
+
+      return {
+        id: t._id,
+        direction: isDebit ? "DEBIT" : "CREDIT",
+        amount: t.amount,
+        status: t.status,
+        createdAt: t.createdAt,
+        counterpartyName: counterparty?.name || "Unknown account",
+        counterpartyId: counterpartyAccount?._id || null,
+      };
+    });
+
+    return res.status(200).json({ transactions: shaped });
+  } catch (error) {
+    console.error("Failed to fetch transactions:", error);
+    return res.status(500).json({ message: "Unable to fetch transactions" });
+  }
 }
 
 async function createInitialFundsTransaction(req, res) {
@@ -370,7 +548,7 @@ async function createInitialFundsTransaction(req, res) {
         });
       }
 
-      await ledgerModel.create(ledgerEntries, { session });
+      await ledgerModel.create(ledgerEntries, { session, ordered: true });
     });
 
     return res.status(201).json({
@@ -398,6 +576,8 @@ async function createInitialFundsTransaction(req, res) {
 }
 
 module.exports = {
+  requestTransferOtp,
   createTransaction,
+  getUserTransactions,
   createInitialFundsTransaction,
 };

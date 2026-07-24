@@ -1,10 +1,45 @@
 const AccountModel = require('../models/account.model');
+const otpservice = require('../services/otp.service');
+
+/**
+ * POST /api/accounts/request-otp
+ * Email the signed-in user a code to authorise opening a new bank account.
+ */
+async function requestAccountOtp(req, res) {
+    try {
+        if (await AccountModel.findOne({ userId: req.userId })) {
+            return res.status(400).json({ message: 'Account already exists for this user' });
+        }
+
+        await otpservice.generateAndSend({
+            email: req.user.email,
+            name: req.user.name,
+            purpose: 'CREATE_ACCOUNT',
+        });
+
+        res.status(200).json({ message: `Verification code sent to ${req.user.email}` });
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ error: error.message });
+    }
+}
 
 async function createAccount(req, res) {
     const userId = req.userId; // Assuming the user ID is available in the request object after authentication
 
     if (await AccountModel.findOne({ userId: userId })) {
         return res.status(400).json({ message: 'Account already exists for this user' });
+    }
+
+    // Require the emailed code before opening the account.
+    const { otp } = req.body;
+    const result = await otpservice.verify({
+        email: req.user.email,
+        purpose: 'CREATE_ACCOUNT',
+        code: otp,
+    });
+    if (!result.ok) {
+        return res.status(400).json({ message: result.message });
     }
 
     const account = await AccountModel.create({ userId: userId });
@@ -47,6 +82,7 @@ async function getAccountBalance(req, res) {
 
 
 module.exports = {
+    requestAccountOtp,
     createAccount,
     getUserAccounts,
     getAllAccounts,

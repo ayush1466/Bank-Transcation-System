@@ -31,9 +31,17 @@ export function AuthProvider({ children }) {
     [persist],
   );
 
-  const register = useCallback(
-    async (name, email, password) => {
-      const res = await api.register({ name, email, password });
+  // Step 1: send the verification code. Does not create the user yet.
+  const registerRequest = useCallback(
+    (name, email, password) =>
+      api.requestRegisterOtp({ name, email, password }),
+    [],
+  );
+
+  // Step 2: verify the code, which creates the user and signs them in.
+  const registerVerify = useCallback(
+    async (email, code) => {
+      const res = await api.verifyRegisterOtp({ email, code });
       persist(res.user);
       return res.user;
     },
@@ -49,7 +57,9 @@ export function AuthProvider({ children }) {
   }, [persist]);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, login, registerRequest, registerVerify, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -32,20 +32,29 @@ async function request(path, { method = "GET", body } = {}) {
 
 export const api = {
   // ---- auth ----
-  register: (payload) =>
-    request("/auth/register", { method: "POST", body: payload }),
+  // Registration is a two-step, OTP-verified flow.
+  requestRegisterOtp: (payload) =>
+    request("/auth/register/request-otp", { method: "POST", body: payload }),
+  verifyRegisterOtp: (payload) =>
+    request("/auth/register/verify", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
   logout: () => request("/auth/logout", { method: "POST" }),
 
   // ---- accounts ----
-  createAccount: () => request("/accounts/", { method: "POST" }),
+  requestAccountOtp: () =>
+    request("/accounts/request-otp", { method: "POST" }),
+  createAccount: (payload) =>
+    request("/accounts/", { method: "POST", body: payload }),
   getMyAccounts: () => request("/accounts/"),
   getAllAccounts: () => request("/accounts/all"),
   getBalance: (accountId) => request(`/accounts/balance/${accountId}`),
 
   // ---- transactions ----
+  requestTransferOtp: (payload) =>
+    request("/transactions/request-otp", { method: "POST", body: payload }),
   transfer: (payload) =>
     request("/transactions/", { method: "POST", body: payload }),
+  getTransactions: () => request("/transactions"),
   seedInitialFunds: (payload) =>
     request("/transactions/system/initial-funds", {
       method: "POST",

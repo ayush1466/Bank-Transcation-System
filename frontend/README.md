@@ -20,10 +20,12 @@ The backend must be running first (on `http://localhost:3000`) and its CORS
 `origin` must match this app's dev URL (`http://localhost:5173`).
 
 ```bash
-# terminal 1 — backend (from the project root)
+# terminal 1 — backend (from ./backend)
+cd backend
 node server.js
 
 # terminal 2 — frontend (from ./frontend)
+cd frontend
 npm run dev
 ```
 

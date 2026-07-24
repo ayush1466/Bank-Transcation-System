@@ -78,6 +78,23 @@ body {
   scrollbar-color: #2a3350 transparent;
 }
 
+/* Flipping-coin loader */
+@keyframes coin-flip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+.animate-coin-flip {
+  animation: coin-flip 1s infinite;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;

@@ -37,6 +37,12 @@ userSchema.pre('save', async function () {
         return;
     }
 
+    // When the password was already hashed elsewhere (e.g. a pending
+    // registration verified via OTP), skip re-hashing to avoid double-hashing.
+    if (this.$locals.skipPasswordHash) {
+        return;
+    }
+
     this.password = await bcrypt.hash(this.password, 10);
 });
 

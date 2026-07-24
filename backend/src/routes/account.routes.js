@@ -11,6 +11,10 @@ const router = express.Router();
  * - Protected route, requires authentication
  */
 
+// Step 1: email an OTP that authorises opening an account.
+router.post('/request-otp', authMiddleware.authenticateToken, accountController.requestAccountOtp);
+
+// Step 2: create the account (requires the emailed OTP in the body).
 router.post('/', authMiddleware.authenticateToken, accountController.createAccount);
 
 // - Routes GET /api/accounts/
