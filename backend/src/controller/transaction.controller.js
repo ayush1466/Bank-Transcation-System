@@ -4,7 +4,6 @@ const accountcontroller = require("../controller/account.controller");
 const accountModel = require("../models/account.model");
 const userModel = require("../models/user.model");
 const emailserivce = require("../services/email.service");
-const otpservice = require("../services/otp.service");
 const mongoose = require("mongoose");
 
 
@@ -31,7 +30,8 @@ async function createTransaction(req, res) {
   /**
    * 1 - Validate request body
    */
-  const { fromAccountId, toAccountId, amount, idempotencyKey, otp } = req.body;
+  const { fromAccountId, toAccountId, amount, idempotencyKey, transferPassword } =
+    req.body;
 
   if (
     !fromAccountId ||
@@ -119,27 +119,29 @@ async function createTransaction(req, res) {
   }
 
   /**
-   * 2b - verify the emailed OTP (bound to this recipient + amount).
+   * 2b - verify the sender's transfer password (set from their profile).
    * Placed after the idempotency check so a safe retry of an already-processed
-   * transfer doesn't require a fresh code.
+   * transfer doesn't require re-entering the password.
    */
-  const otpResult = await otpservice.verify({
-    email: req.user.email,
-    purpose: "TRANSFER",
-    code: otp,
-  });
-  if (!otpResult.ok) {
-    return res.status(400).json({ message: otpResult.message });
-  }
-  const boundContext = otpResult.context || {};
-  if (
-    String(boundContext.toAccountId) !== String(toAccountId) ||
-    Number(boundContext.amount) !== parsedAmount
-  ) {
+  const sender = await userModel
+    .findById(req.userId)
+    .select("+transferPassword");
+
+  if (!sender || !sender.transferPassword) {
     return res.status(400).json({
-      message:
-        "This code doesn't match the transfer details. Please request a new one.",
+      message: "Set a transfer password in your profile before sending money",
     });
+  }
+
+  if (!transferPassword) {
+    return res.status(400).json({ message: "Transfer password is required" });
+  }
+
+  const passwordMatches = await sender.compareTransferPassword(
+    String(transferPassword),
+  );
+  if (!passwordMatches) {
+    return res.status(401).json({ message: "Incorrect transfer password" });
   }
 
   /**

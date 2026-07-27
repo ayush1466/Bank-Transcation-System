@@ -8,6 +8,7 @@ import {
   Bell,
   Copy,
   Check,
+  KeyRound,
   Loader2,
   LogOut,
   MoreHorizontal,
@@ -27,6 +28,8 @@ import Loader from "@/components/Loader";
 import SendMoneyModal from "@/components/SendMoneyModal";
 import RequestModal from "@/components/RequestModal";
 import OtpDialog from "@/components/OtpDialog";
+import ThemeToggle from "@/components/ThemeToggle";
+import TransferPasswordModal from "@/components/TransferPasswordModal";
 import {
   currencySymbol,
   formatDate,
@@ -36,8 +39,12 @@ import {
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+// Shared shape for the circular icon buttons in the header.
+const ICON_BUTTON =
+  "grid size-9 place-items-center rounded-full bg-card text-muted-foreground ring-1 ring-border shadow-sm transition hover:bg-muted hover:text-foreground";
+
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const [account, setAccount] = useState(null);
@@ -48,6 +55,9 @@ export default function Dashboard() {
   const [sendOpen, setSendOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
   const [acctOtpOpen, setAcctOtpOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+
+  const hasTransferPassword = !!user?.hasTransferPassword;
 
   const handleAuthError = useCallback(
     async (err) => {
@@ -64,18 +74,24 @@ export default function Dashboard() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [{ accounts }, txRes] = await Promise.all([
+      const [{ accounts }, txRes, meRes] = await Promise.all([
         api.getMyAccounts(),
         api.getTransactions().catch(() => ({ transactions: [] })),
+        // Refresh the profile so we know whether a transfer password is set,
+        // even for sessions that predate the feature.
+        api.getMe().catch(() => null),
       ]);
       setAccount(accounts?.[0] || null);
       setTransactions(txRes?.transactions || []);
+      if (meRes?.user) {
+        updateUser({ hasTransferPassword: !!meRes.user.hasTransferPassword });
+      }
     } catch (err) {
       if (!(await handleAuthError(err))) toast.error(err.message);
     } finally {
       setLoading(false);
     }
-  }, [handleAuthError]);
+  }, [handleAuthError, updateUser]);
 
   useEffect(() => {
     loadAll();
@@ -177,6 +193,10 @@ export default function Dashboard() {
               refreshing={refreshing}
               onRefresh={refresh}
             />
+            <SecurityCard
+              hasTransferPassword={hasTransferPassword}
+              onManage={() => setPwOpen(true)}
+            />
             <PromoCard onSend={() => setSendOpen(true)} />
           </div>
         </div>
@@ -191,6 +211,8 @@ export default function Dashboard() {
             open={sendOpen}
             onClose={() => setSendOpen(false)}
             onDone={refresh}
+            hasTransferPassword={hasTransferPassword}
+            onManagePassword={() => setPwOpen(true)}
           />
           <RequestModal
             account={account}
@@ -212,6 +234,13 @@ export default function Dashboard() {
           toast.success("New code sent");
         }}
       />
+
+      <TransferPasswordModal
+        open={pwOpen}
+        onClose={() => setPwOpen(false)}
+        isChange={hasTransferPassword}
+        onSaved={() => updateUser({ hasTransferPassword: true })}
+      />
     </div>
   );
 }
@@ -222,33 +251,35 @@ function Header({ user, onLogout, onSystem }) {
     <motion.header
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-6 flex items-center justify-between sm:mb-8"
+      className="mb-6 flex items-center justify-between gap-3 sm:mb-8"
     >
       <div className="flex items-center gap-3">
-        <div className="grid size-11 place-items-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-semibold text-white shadow-lg shadow-brand-600/20">
+        <div className="grid size-11 place-items-center rounded-full bg-linear-to-br from-brand-400 to-brand-600 text-sm font-semibold text-white shadow-lg shadow-brand-600/25">
           {initials(user?.name)}
         </div>
         <div>
-          <p className="text-xs text-white/45">{greeting()}</p>
-          <h1 className="text-lg font-semibold text-white">{user?.name}</h1>
+          <p className="text-xs text-muted-foreground">{greeting()}</p>
+          <h1 className="text-lg font-semibold">{user?.name}</h1>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="grid size-9 place-items-center rounded-full bg-white/[0.06] text-white/70 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white">
+        <ThemeToggle compact className="mr-1 hidden sm:inline-flex" />
+        <button className={ICON_BUTTON} aria-label="Notifications">
           <Bell className="size-4" />
         </button>
         {user?.systemUser && (
           <button
             onClick={onSystem}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-white/[0.06] px-3 text-sm text-white/80 ring-1 ring-white/10 transition hover:bg-white/10"
+            className="flex h-9 items-center gap-1.5 rounded-full bg-card px-3 text-sm font-medium text-foreground/80 ring-1 ring-border shadow-sm transition hover:bg-muted"
           >
-            <ShieldCheck className="size-4 text-amber-400" /> System
+            <ShieldCheck className="size-4 text-amber-500 dark:text-amber-400" />
+            System
           </button>
         )}
         <button
           onClick={onLogout}
-          className="flex h-9 items-center gap-1.5 rounded-full px-3 text-sm text-white/60 transition hover:bg-white/10 hover:text-white"
+          className="flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
         >
           <LogOut className="size-4" /> Logout
         </button>
@@ -257,21 +288,21 @@ function Header({ user, onLogout, onSystem }) {
   );
 }
 
-/* ---------- Balance hero (light card) ---------- */
+/* ---------- Balance hero (brand gradient card) ---------- */
 function BalanceHero({ account, onSend, onRequest }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.05 }}
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-slate-50 to-slate-200 p-6 text-slate-900 shadow-xl sm:p-8"
+      className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-700 via-brand-600 to-aqua-500 p-6 text-white shadow-[0_24px_60px_-28px_rgba(30,80,224,0.75)] sm:p-8"
     >
       {/* soft decorative blobs */}
-      <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-brand-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 -left-10 size-52 rounded-full bg-brand-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-white/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -left-10 size-52 rounded-full bg-aqua-300/25 blur-3xl" />
 
       <div className="relative">
-        <div className="flex items-center gap-2 text-slate-500">
+        <div className="flex items-center gap-2 text-white/70">
           <Wallet className="size-4" />
           <span className="text-sm font-medium">Total Balance</span>
         </div>
@@ -285,20 +316,20 @@ function BalanceHero({ account, onSend, onRequest }) {
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
+            onClick={onSend}
+            className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-700 shadow-sm transition hover:bg-white/90 active:translate-y-px"
+          >
+            <Send className="size-4" /> Send
+          </button>
+          <button
             onClick={onRequest}
-            className="flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 active:translate-y-px"
+            className="flex items-center gap-2 rounded-full bg-white/15 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/25 active:translate-y-px"
           >
             <QrCode className="size-4" /> Request
           </button>
           <button
             onClick={onSend}
-            className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 ring-1 ring-slate-300 transition hover:bg-slate-50 active:translate-y-px"
-          >
-            <Send className="size-4" /> Send
-          </button>
-          <button
-            onClick={onSend}
-            className="grid size-11 place-items-center rounded-full bg-white text-slate-600 ring-1 ring-slate-300 transition hover:bg-slate-50"
+            className="grid size-11 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/25"
             title="More"
           >
             <MoreHorizontal className="size-5" />
@@ -313,25 +344,25 @@ function BalanceHero({ account, onSend, onRequest }) {
 function StatsRow({ stats, currency }) {
   const items = [
     {
-      label: "Money In",
+      label: "Received",
       value: stats.income,
       icon: TrendingUp,
-      tint: "text-emerald-400",
-      ring: "ring-emerald-400/20 bg-emerald-400/10",
+      tint: "text-emerald-600 dark:text-emerald-400",
+      ring: "bg-emerald-500/10 ring-emerald-500/20 dark:bg-emerald-400/10 dark:ring-emerald-400/20",
     },
     {
-      label: "Money Out",
+      label: "Sent",
       value: stats.spending,
       icon: TrendingDown,
-      tint: "text-rose-400",
-      ring: "ring-rose-400/20 bg-rose-400/10",
+      tint: "text-rose-600 dark:text-rose-400",
+      ring: "bg-rose-500/10 ring-rose-500/20 dark:bg-rose-400/10 dark:ring-rose-400/20",
     },
     {
       label: "Net Flow",
       value: stats.net,
       icon: Wallet,
-      tint: "text-brand-400",
-      ring: "ring-brand-400/20 bg-brand-400/10",
+      tint: "text-primary",
+      ring: "bg-primary/10 ring-primary/20",
     },
   ];
   return (
@@ -342,17 +373,14 @@ function StatsRow({ stats, currency }) {
       className="grid grid-cols-3 gap-3"
     >
       {items.map(({ label, value, icon: Icon, tint, ring }) => (
-        <div
-          key={label}
-          className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
-        >
+        <div key={label} className="panel rounded-2xl p-4">
           <div
             className={cn("grid size-8 place-items-center rounded-lg ring-1", ring)}
           >
             <Icon className={cn("size-4", tint)} />
           </div>
-          <p className="mt-3 text-xs text-white/45">{label}</p>
-          <p className="mt-0.5 truncate text-sm font-semibold text-white sm:text-base">
+          <p className="mt-3 text-xs text-muted-foreground">{label}</p>
+          <p className="mt-0.5 truncate text-sm font-semibold sm:text-base">
             {formatMoney(value, currency)}
           </p>
         </div>
@@ -368,33 +396,33 @@ function TransactionsCard({ transactions, currency, onSend }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6"
+      className="panel rounded-2xl p-5 sm:p-6"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold text-white">Transactions</h2>
-        <span className="text-xs text-white/40">
+        <h2 className="font-semibold">Transactions</h2>
+        <span className="text-xs text-muted-foreground">
           {transactions.length} total
         </span>
       </div>
 
       {transactions.length === 0 ? (
-        <div className="grid place-items-center rounded-xl border border-dashed border-white/10 py-10 text-center">
-          <div className="mb-3 grid size-11 place-items-center rounded-full bg-white/5">
-            <Send className="size-5 text-white/40" />
+        <div className="grid place-items-center rounded-xl border border-dashed border-border py-10 text-center">
+          <div className="mb-3 grid size-11 place-items-center rounded-full bg-muted">
+            <Send className="size-5 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-white/70">No transactions yet</p>
-          <p className="mt-1 max-w-xs text-xs text-white/40">
+          <p className="text-sm font-medium">No transactions yet</p>
+          <p className="mt-1 max-w-xs text-xs text-muted-foreground">
             Once you send or receive money, it will show up here.
           </p>
           <button
             onClick={onSend}
-            className="mt-4 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition hover:bg-white/90"
+            className="mt-4 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
           >
             Send your first payment
           </button>
         </div>
       ) : (
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-border">
           {transactions.map((t) => (
             <TransactionRow key={t.id} tx={t} currency={currency} />
           ))}
@@ -412,23 +440,23 @@ function TransactionRow({ tx, currency }) {
         className={cn(
           "grid size-10 shrink-0 place-items-center rounded-full ring-1",
           isCredit
-            ? "bg-emerald-400/10 ring-emerald-400/20"
-            : "bg-white/5 ring-white/10",
+            ? "bg-emerald-500/10 ring-emerald-500/20 dark:bg-emerald-400/10 dark:ring-emerald-400/20"
+            : "bg-muted ring-border",
         )}
       >
         {isCredit ? (
-          <ArrowDownLeft className="size-5 text-emerald-400" />
+          <ArrowDownLeft className="size-5 text-emerald-600 dark:text-emerald-400" />
         ) : (
-          <ArrowUpRight className="size-5 text-white/70" />
+          <ArrowUpRight className="size-5 text-muted-foreground" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-white">
+        <p className="truncate text-sm font-medium">
           {isCredit ? "From " : "To "}
           {tx.counterpartyName}
         </p>
-        <p className="truncate text-xs text-white/40">
+        <p className="truncate text-xs text-muted-foreground">
           {formatDate(tx.createdAt)}
         </p>
       </div>
@@ -437,14 +465,14 @@ function TransactionRow({ tx, currency }) {
         <p
           className={cn(
             "text-sm font-semibold tabular-nums",
-            isCredit ? "text-emerald-400" : "text-white",
+            isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-foreground",
           )}
         >
           {isCredit ? "+" : "−"}
           {formatMoney(tx.amount, currency)}
         </p>
         {tx.status !== "COMPLETED" && (
-          <p className="text-[10px] uppercase tracking-wide text-amber-400/80">
+          <p className="text-[10px] tracking-wide text-amber-600 uppercase dark:text-amber-400">
             {tx.status}
           </p>
         )}
@@ -471,43 +499,41 @@ function AccountCard({ account, refreshing, onRefresh }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08 }}
-      className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6"
+      className="panel rounded-2xl p-5 sm:p-6"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold text-white">Account</h2>
-        <span className="rounded-full bg-emerald-400/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400 ring-1 ring-emerald-400/20">
+        <h2 className="font-semibold">Account</h2>
+        <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-400">
           {account.status}
         </span>
       </div>
 
-      <p className="text-xs text-white/40">Account ID</p>
+      <p className="text-xs text-muted-foreground">Account ID</p>
       <div className="mt-1 flex items-center justify-between gap-2">
-        <span className="truncate font-mono text-sm text-white/80">
+        <span className="truncate font-mono text-sm text-foreground/80">
           {account._id.slice(0, 10)}…{account._id.slice(-6)}
         </span>
         <button
           onClick={copy}
-          className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/5 text-white/60 transition hover:bg-white/10 hover:text-white"
+          className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground transition hover:bg-accent hover:text-foreground"
           title="Copy full account ID"
         >
           {copied ? (
-            <Check className="size-4 text-emerald-400" />
+            <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
           ) : (
             <Copy className="size-4" />
           )}
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/5 pt-4">
+      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4">
         <div>
-          <p className="text-xs text-white/40">Currency</p>
-          <p className="mt-0.5 text-sm font-medium text-white">
-            {account.currency}
-          </p>
+          <p className="text-xs text-muted-foreground">Currency</p>
+          <p className="mt-0.5 text-sm font-medium">{account.currency}</p>
         </div>
         <div>
-          <p className="text-xs text-white/40">Opened</p>
-          <p className="mt-0.5 text-sm font-medium text-white">
+          <p className="text-xs text-muted-foreground">Opened</p>
+          <p className="mt-0.5 text-sm font-medium">
             {account.createdAt
               ? new Date(account.createdAt).toLocaleDateString(undefined, {
                   month: "short",
@@ -521,10 +547,54 @@ function AccountCard({ account, refreshing, onRefresh }) {
       <button
         onClick={onRefresh}
         disabled={refreshing}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white/5 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-muted py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-accent hover:text-foreground disabled:opacity-50"
       >
         <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
         {refreshing ? "Refreshing…" : "Refresh balance"}
+      </button>
+    </motion.div>
+  );
+}
+
+/* ---------- Transfer password (security) ---------- */
+function SecurityCard({ hasTransferPassword, onManage }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="panel rounded-2xl p-5 sm:p-6"
+    >
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-semibold">Transfer password</h2>
+        {hasTransferPassword ? (
+          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-400">
+            Set
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-500/25 dark:text-amber-400">
+            Not set
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 ring-1 ring-primary/25">
+          <KeyRound className="size-5 text-primary" />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {hasTransferPassword
+            ? "You'll be asked for this password each time you send money."
+            : "Set a password to protect your transfers. It's required before any money leaves your account."}
+        </p>
+      </div>
+
+      <button
+        onClick={onManage}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-muted py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-accent hover:text-foreground"
+      >
+        <KeyRound className="size-4" />
+        {hasTransferPassword ? "Change transfer password" : "Set transfer password"}
       </button>
     </motion.div>
   );
@@ -537,17 +607,17 @@ function PromoCard({ onSend }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.12 }}
-      className="relative overflow-hidden rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-600/25 to-transparent p-5 sm:p-6"
+      className="relative overflow-hidden rounded-2xl border border-primary/20 bg-linear-to-br from-primary/12 to-transparent p-5 sm:p-6"
     >
-      <div className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-brand-500/20 blur-2xl" />
-      <ShieldCheck className="size-6 text-brand-300" />
-      <h3 className="mt-3 font-semibold text-white">Instant & secure</h3>
-      <p className="mt-1 text-sm text-white/60">
+      <div className="pointer-events-none absolute -top-8 -right-8 size-32 rounded-full bg-primary/15 blur-2xl" />
+      <ShieldCheck className="size-6 text-primary" />
+      <h3 className="mt-3 font-semibold">Instant &amp; secure</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
         Every transfer is verified and double-entry recorded in the ledger.
       </p>
       <button
         onClick={onSend}
-        className="mt-4 flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90"
+        className="mt-4 flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
       >
         <Send className="size-4" /> Send money
       </button>
@@ -561,19 +631,19 @@ function NoAccount({ creating, onCreate }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="grid place-items-center rounded-3xl border border-dashed border-white/15 bg-white/[0.02] p-12 text-center"
+      className="grid place-items-center rounded-3xl border border-dashed border-border bg-card/60 p-12 text-center"
     >
-      <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-brand-500/15 ring-1 ring-brand-500/30">
-        <PlusCircle className="size-7 text-brand-400" />
+      <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-primary/10 ring-1 ring-primary/25">
+        <PlusCircle className="size-7 text-primary" />
       </div>
-      <h2 className="text-lg font-semibold text-white">No account yet</h2>
-      <p className="mt-1 max-w-sm text-sm text-white/60">
+      <h2 className="text-lg font-semibold">No account yet</h2>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">
         Open your bank account to start receiving and sending money.
       </p>
       <button
         onClick={onCreate}
         disabled={creating}
-        className="mt-5 flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90 disabled:opacity-50"
+        className="mt-5 flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
       >
         {creating ? (
           <Loader2 className="size-4 animate-spin" />

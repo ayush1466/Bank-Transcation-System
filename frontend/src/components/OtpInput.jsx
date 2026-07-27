@@ -75,8 +75,8 @@ export default function OtpInput({
           onKeyDown={(e) => handleKeyDown(i, e)}
           onFocus={(e) => e.target.select()}
           className={cn(
-            "size-12 rounded-xl border border-white/10 bg-white/[0.04] text-center text-xl font-semibold text-white outline-none transition",
-            "focus:border-brand-500/60 focus:bg-white/[0.07] focus:ring-2 focus:ring-brand-500/20",
+            "auth-field size-12 rounded-xl border border-border text-center text-xl font-semibold text-foreground outline-none transition",
+            "focus:border-primary focus:ring-4 focus:ring-primary/15",
             "disabled:opacity-50",
           )}
         />

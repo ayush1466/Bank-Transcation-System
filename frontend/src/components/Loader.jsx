@@ -31,7 +31,7 @@ export default function Loader({ fullscreen = false, label, className }) {
         </span>
       </div>
 
-      {label && <p className="text-sm text-white/50">{label}</p>}
+      {label && <p className="text-sm text-muted-foreground">{label}</p>}
     </div>
   );
 }

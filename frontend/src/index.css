@@ -8,10 +8,17 @@
 @theme {
   --color-brand-50: #eef4ff;
   --color-brand-100: #d9e6ff;
+  --color-brand-200: #b9d2ff;
   --color-brand-400: #5b8cff;
   --color-brand-500: #2f6bff;
   --color-brand-600: #1e50e0;
   --color-brand-700: #1740b8;
+  --color-brand-900: #0b1f5c;
+
+  /* Cyan accent — pairs with the deep blue for the gradient surfaces. */
+  --color-aqua-300: #6fe0ff;
+  --color-aqua-400: #22c8f5;
+  --color-aqua-500: #00baf2;
 
   --color-ink-900: #0a0e1a;
   --color-ink-800: #10162a;
@@ -19,40 +26,114 @@
   --color-ink-600: #2a3350;
 }
 
+/* ---------------------------------------------------------------- *
+ * Light theme (default) — white surfaces, deep-navy ink, blue CTA.
+ * ---------------------------------------------------------------- */
 :root {
-  color-scheme: dark;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  color-scheme: light;
+
+  --background: oklch(0.981 0.008 250);
+  --foreground: oklch(0.245 0.042 264);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.245 0.042 264);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.245 0.042 264);
+  --primary: oklch(0.565 0.208 263);
+  --primary-foreground: oklch(0.995 0 0);
+  --secondary: oklch(0.962 0.013 255);
+  --secondary-foreground: oklch(0.3 0.04 264);
+  --muted: oklch(0.966 0.011 255);
+  --muted-foreground: oklch(0.53 0.031 259);
+  --accent: oklch(0.951 0.028 250);
+  --accent-foreground: oklch(0.32 0.09 264);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: oklch(0.912 0.013 256);
+  --input: oklch(0.912 0.013 256);
+  --ring: oklch(0.565 0.208 263);
+  --chart-1: oklch(0.565 0.208 263);
+  --chart-2: oklch(0.72 0.14 220);
+  --chart-3: oklch(0.62 0.12 200);
+  --chart-4: oklch(0.55 0.1 280);
+  --chart-5: oklch(0.45 0.08 265);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.99 0.005 250);
+  --sidebar-foreground: oklch(0.245 0.042 264);
+  --sidebar-primary: oklch(0.565 0.208 263);
+  --sidebar-primary-foreground: oklch(0.995 0 0);
+  --sidebar-accent: oklch(0.951 0.028 250);
+  --sidebar-accent-foreground: oklch(0.32 0.09 264);
+  --sidebar-border: oklch(0.912 0.013 256);
+  --sidebar-ring: oklch(0.565 0.208 263);
+
+  /* Page canvas (used by the body gradient below). */
+  --surface-base: #f2f6ff;
+  --surface-glow-1: rgba(47, 107, 255, 0.16);
+  --surface-glow-2: rgba(0, 186, 242, 0.14);
+  --scrollbar-thumb: #c3cfe6;
+
+  /* Auth card + panel tuning. */
+  --auth-card-bg: rgba(255, 255, 255, 0.86);
+  --auth-card-border: rgba(15, 33, 80, 0.08);
+  --auth-card-shadow: 0 28px 70px -28px rgba(16, 36, 94, 0.32);
+  --field-bg: rgba(255, 255, 255, 0.9);
+
+  /* Raised panel used by every dashboard / console card. */
+  --panel-shadow:
+    0 1px 2px rgba(16, 36, 94, 0.06),
+    0 10px 28px -18px rgba(16, 36, 94, 0.28);
+  --scrim: rgba(9, 16, 38, 0.45);
+}
+
+/* ---------------------------------------------------------------- *
+ * Dark theme
+ * ---------------------------------------------------------------- */
+.dark {
+  color-scheme: dark;
+
+  --background: oklch(0.168 0.026 266);
+  --foreground: oklch(0.955 0.008 255);
+  --card: oklch(0.222 0.029 266);
+  --card-foreground: oklch(0.955 0.008 255);
+  --popover: oklch(0.222 0.029 266);
+  --popover-foreground: oklch(0.955 0.008 255);
+  --primary: oklch(0.585 0.202 263);
+  --primary-foreground: oklch(0.995 0 0);
+  --secondary: oklch(0.29 0.03 266);
+  --secondary-foreground: oklch(0.955 0.008 255);
+  --muted: oklch(0.286 0.028 266);
+  --muted-foreground: oklch(0.712 0.024 258);
+  --accent: oklch(0.31 0.05 264);
+  --accent-foreground: oklch(0.955 0.008 255);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.62 0.19 263);
+  --chart-1: oklch(0.66 0.19 263);
+  --chart-2: oklch(0.74 0.14 220);
+  --chart-3: oklch(0.66 0.12 200);
+  --chart-4: oklch(0.6 0.1 280);
+  --chart-5: oklch(0.5 0.08 265);
+  --sidebar: oklch(0.205 0.028 266);
+  --sidebar-foreground: oklch(0.955 0.008 255);
+  --sidebar-primary: oklch(0.585 0.202 263);
+  --sidebar-primary-foreground: oklch(0.995 0 0);
+  --sidebar-accent: oklch(0.29 0.03 266);
+  --sidebar-accent-foreground: oklch(0.955 0.008 255);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.62 0.19 263);
+
+  --surface-base: #0a0e1a;
+  --surface-glow-1: rgba(47, 107, 255, 0.2);
+  --surface-glow-2: rgba(0, 186, 242, 0.12);
+  --scrollbar-thumb: #2a3350;
+
+  --auth-card-bg: rgba(255, 255, 255, 0.035);
+  --auth-card-border: rgba(255, 255, 255, 0.09);
+  --auth-card-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.75);
+  --field-bg: rgba(255, 255, 255, 0.04);
+
+  --panel-shadow: 0 18px 40px -30px rgba(0, 0, 0, 0.8);
+  --scrim: rgba(2, 5, 14, 0.7);
 }
 
 html,
@@ -64,19 +145,48 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(47, 107, 255, 0.18), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(91, 140, 255, 0.12), transparent 60%),
-    #0a0e1a;
-  color: #e6ebf5;
+    radial-gradient(1200px 620px at 82% -12%, var(--surface-glow-1), transparent 62%),
+    radial-gradient(900px 520px at -12% 112%, var(--surface-glow-2), transparent 60%),
+    var(--surface-base);
+  background-attachment: fixed;
+  color: var(--foreground);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* thin scrollbar to match the dark theme */
+/* thin scrollbar that follows the active theme */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2a3350 transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
+
+/* Cross-fade colours while the theme flips (class toggled for ~400ms). */
+html.theme-anim,
+html.theme-anim *,
+html.theme-anim *::before,
+html.theme-anim *::after {
+  transition:
+    background-color 320ms ease,
+    border-color 320ms ease,
+    color 320ms ease,
+    fill 320ms ease,
+    box-shadow 320ms ease !important;
+  transition-delay: 0ms !important;
+}
+
+/* Keep autofilled fields on-theme instead of the browser's yellow. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--foreground);
+  -webkit-background-clip: text;
+  caret-color: var(--foreground);
+  transition: background-color 100000s ease-in-out 0s;
+}
+
+/* ---------------------------------------------------------------- *
+ * Animations
+ * ---------------------------------------------------------------- */
 
 /* Flipping-coin loader */
 @keyframes coin-flip {
@@ -93,6 +203,131 @@ body {
 
 .animate-coin-flip {
   animation: coin-flip 1s infinite;
+}
+
+/* Slow drift for the decorative orbs on the brand panel. */
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(28px, -34px, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-24px, 22px, 0) scale(0.94);
+  }
+}
+
+.animate-orb {
+  animation: orb-drift 18s ease-in-out infinite;
+}
+
+/* Lazy pan across the brand gradient. */
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Sheen that sweeps the primary CTA on hover. */
+@keyframes cta-sheen {
+  from {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(260%) skewX(-18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-orb,
+  .brand-panel {
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Auth surfaces
+ * ---------------------------------------------------------------- */
+
+/* Deep blue → cyan showcase panel beside the auth form. */
+.brand-panel {
+  background:
+    linear-gradient(
+      125deg,
+      #04123a 0%,
+      #0a2a7d 32%,
+      #1352cf 62%,
+      #0b8fd9 84%,
+      #00baf2 100%
+    );
+  background-size: 220% 220%;
+  animation: gradient-pan 22s ease-in-out infinite;
+}
+
+/* Faint blueprint grid layered over the brand panel. */
+.brand-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at 30% 20%, #000 0%, transparent 78%);
+}
+
+/* Same canvas as <body>, but scoped — lets a subtree pin its own theme. */
+.app-surface {
+  background:
+    radial-gradient(1200px 620px at 82% -12%, var(--surface-glow-1), transparent 62%),
+    radial-gradient(900px 520px at -12% 112%, var(--surface-glow-2), transparent 60%),
+    var(--surface-base);
+}
+
+.auth-card {
+  background-color: var(--auth-card-bg);
+  border: 1px solid var(--auth-card-border);
+  box-shadow: var(--auth-card-shadow);
+  backdrop-filter: blur(20px);
+}
+
+/* Standard raised card for the dashboard / system console. */
+.panel {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--panel-shadow);
+}
+
+/* Dimming layer behind modals — stays dark in both themes. */
+.scrim {
+  background-color: var(--scrim);
+}
+
+.auth-field {
+  background-color: var(--field-bg);
+}
+
+.cta-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cta-sheen:hover::after {
+  opacity: 1;
+  animation: cta-sheen 900ms ease-out;
 }
 
 @theme inline {
@@ -138,46 +373,12 @@ body {
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
   html {
     @apply font-sans;

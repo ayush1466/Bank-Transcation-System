@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,25 +60,23 @@ export default function System() {
         className="mb-8 flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-xl bg-amber-500/15 ring-1 ring-amber-500/30">
-            <ShieldCheck className="size-5 text-amber-400" />
+          <div className="grid size-10 place-items-center rounded-xl bg-amber-500/12 ring-1 ring-amber-500/30">
+            <ShieldCheck className="size-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <p className="text-sm text-white/50">System console</p>
-            <h1 className="text-lg font-semibold text-white">
-              {user?.name}
-            </h1>
+            <p className="text-sm text-muted-foreground">System console</p>
+            <h1 className="text-lg font-semibold">{user?.name}</h1>
           </div>
         </div>
-        <Link
-          to="/dashboard"
-          className={buttonVariants({
-            variant: "ghost",
-            className: "gap-2 text-white/70",
-          })}
-        >
-          <ArrowLeft className="size-4" /> Dashboard
-        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle compact />
+          <Link
+            to="/dashboard"
+            className={buttonVariants({ variant: "outline", className: "gap-2" })}
+          >
+            <ArrowLeft className="size-4" /> Dashboard
+          </Link>
+        </div>
       </motion.header>
 
       {denied ? (
@@ -127,12 +126,15 @@ function SeedFundsCard({ accounts, onDone }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-600/20 via-amber-500/5 to-transparent p-6"
+      className="panel rounded-2xl bg-linear-to-br from-amber-500/12 via-amber-500/4 to-transparent p-6"
     >
-      <div className="mb-5 flex items-center gap-2 text-white">
-        <Banknote className="size-4 text-amber-400" />
+      <div className="mb-5 flex items-center gap-2">
+        <Banknote className="size-4 text-amber-600 dark:text-amber-400" />
         <h2 className="font-semibold">Seed initial funds</h2>
-        <Badge variant="outline" className="ml-auto border-amber-500/40 text-amber-300">
+        <Badge
+          variant="outline"
+          className="ml-auto border-amber-500/40 text-amber-700 dark:text-amber-300"
+        >
           system only
         </Badge>
       </div>
@@ -183,12 +185,12 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08 }}
-      className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+      className="panel rounded-2xl p-6"
     >
-      <div className="mb-5 flex items-center gap-2 text-white">
-        <Users className="size-4 text-brand-400" />
+      <div className="mb-5 flex items-center gap-2">
+        <Users className="size-4 text-primary" />
         <h2 className="font-semibold">All accounts</h2>
-        <span className="text-sm text-white/40">({accounts.length})</span>
+        <span className="text-sm text-muted-foreground">({accounts.length})</span>
         <Button
           size="sm"
           variant="secondary"
@@ -206,19 +208,19 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-12 animate-pulse rounded-lg bg-white/[0.04]"
+              className="h-12 animate-pulse rounded-lg bg-muted"
             />
           ))}
         </div>
       ) : accounts.length === 0 ? (
-        <p className="py-8 text-center text-sm text-white/50">
+        <p className="py-8 text-center text-sm text-muted-foreground">
           No accounts yet.
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-white/40">
+              <tr className="text-left text-muted-foreground">
                 <th className="pb-3 font-medium">Owner</th>
                 <th className="pb-3 font-medium">Account ID</th>
                 <th className="pb-3 font-medium">Status</th>
@@ -232,11 +234,11 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.04 }}
-                  className="border-t border-white/5"
+                  className="border-t border-border"
                 >
-                  <td className="py-3 text-white">
+                  <td className="py-3">
                     {acc.userId?.name || "—"}
-                    <div className="text-xs text-white/40">
+                    <div className="text-xs text-muted-foreground">
                       {acc.userId?.email || ""}
                     </div>
                   </td>
@@ -244,14 +246,11 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
                     <AccountIdChip id={acc._id} />
                   </td>
                   <td className="py-3">
-                    <Badge
-                      variant="outline"
-                      className="border-white/15 text-white/70"
-                    >
+                    <Badge variant="outline" className="text-muted-foreground">
                       {acc.status}
                     </Badge>
                   </td>
-                  <td className="py-3 text-right font-medium text-white">
+                  <td className="py-3 text-right font-medium">
                     {acc.currency}{" "}
                     {Number(acc.balance).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
@@ -276,7 +275,7 @@ function AccountIdChip({ id }) {
   return (
     <button
       onClick={copy}
-      className="flex items-center gap-2 rounded-md bg-black/20 px-2 py-1 font-mono text-xs text-white/60 transition hover:text-white"
+      className="flex items-center gap-2 rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
       title="Copy account ID"
     >
       {id.slice(0, 6)}…{id.slice(-4)}
@@ -291,13 +290,13 @@ function AccessDenied() {
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="grid place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-12 text-center"
+      className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/60 p-12 text-center"
     >
-      <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-red-500/15 ring-1 ring-red-500/30">
-        <Lock className="size-7 text-red-400" />
+      <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-red-500/12 ring-1 ring-red-500/30">
+        <Lock className="size-7 text-red-600 dark:text-red-400" />
       </div>
-      <h2 className="text-lg font-semibold text-white">System access only</h2>
-      <p className="mt-1 max-w-sm text-sm text-white/60">
+      <h2 className="text-lg font-semibold">System access only</h2>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">
         This console is restricted to system users. Your account doesn't have
         those privileges.
       </p>
