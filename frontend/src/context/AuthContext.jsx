@@ -22,6 +22,16 @@ export function AuthProvider({ children }) {
     else localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  // Merge a partial update into the current user (e.g. hasTransferPassword)
+  // without clobbering the rest of the stored profile.
+  const updateUser = useCallback((patch) => {
+    setUser((prev) => {
+      const next = { ...(prev || {}), ...patch };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const login = useCallback(
     async (email, password) => {
       const res = await api.login({ email, password });
@@ -58,7 +68,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, registerRequest, registerVerify, logout }}
+      value={{ user, login, registerRequest, registerVerify, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>

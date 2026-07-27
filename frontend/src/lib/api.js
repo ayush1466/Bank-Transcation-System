@@ -39,6 +39,10 @@ export const api = {
     request("/auth/register/verify", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
   logout: () => request("/auth/logout", { method: "POST" }),
+  getMe: () => request("/auth/me"),
+  // Set or change the password required to authorise transfers.
+  setTransferPassword: (payload) =>
+    request("/auth/transfer-password", { method: "POST", body: payload }),
 
   // ---- accounts ----
   requestAccountOtp: () =>
@@ -50,8 +54,6 @@ export const api = {
   getBalance: (accountId) => request(`/accounts/balance/${accountId}`),
 
   // ---- transactions ----
-  requestTransferOtp: (payload) =>
-    request("/transactions/request-otp", { method: "POST", body: payload }),
   transfer: (payload) =>
     request("/transactions/", { method: "POST", body: payload }),
   getTransactions: () => request("/transactions"),

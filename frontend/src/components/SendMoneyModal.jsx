@@ -2,27 +2,45 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
-import { ArrowLeft, Delete, Loader2, MailCheck, Send, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Delete,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Send,
+  ShieldAlert,
+  X,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import OtpInput from "@/components/OtpInput";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "del"];
 
 // A phone-keypad style transfer flow, matching the mockup's "Send Money" screen
-// but sized for the web. Amount is built up digit by digit.
-export default function SendMoneyModal({ account, open, onClose, onDone }) {
+// but sized for the web. Amount is built up digit by digit, then the user
+// confirms with the transfer password they set in their profile.
+export default function SendMoneyModal({
+  account,
+  open,
+  onClose,
+  onDone,
+  hasTransferPassword,
+  onManagePassword,
+}) {
   const [toAccountId, setToAccountId] = useState("");
   const [amount, setAmount] = useState(""); // raw string, e.g. "450.5"
   const [sending, setSending] = useState(false);
-  const [view, setView] = useState("amount"); // "amount" | "otp" | "success"
-  const [code, setCode] = useState("");
+  const [view, setView] = useState("amount"); // "amount" | "password" | "success"
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const balance = Number(account?.balance) || 0;
   const numericAmount = Number(amount) || 0;
   const overBalance = numericAmount > balance;
-  const canSend =
+  const canContinue =
     !sending &&
     toAccountId.trim().length > 0 &&
     numericAmount > 0 &&
@@ -35,7 +53,8 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
       setAmount("");
       setSending(false);
       setView("amount");
-      setCode("");
+      setPassword("");
+      setShowPassword(false);
     }
   }, [open]);
 
@@ -57,6 +76,12 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
     function onKey(e) {
       if (e.key === "Escape") return onClose();
       if (view !== "amount") return;
+      // Don't hijack keystrokes when the user is typing in a field
+      // (e.g. the recipient account ID input).
+      const tag = e.target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || e.target?.isContentEditable) {
+        return;
+      }
       if (/^[0-9]$/.test(e.key)) press(e.key);
       else if (e.key === ".") press(".");
       else if (e.key === "Backspace") press("del");
@@ -72,37 +97,30 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
     return () => clearTimeout(t);
   }, [view, onClose]);
 
-  // Step 1: email a code bound to this recipient + amount.
-  async function requestCode() {
-    if (!canSend) return;
-    setSending(true);
-    try {
-      await api.requestTransferOtp({
-        fromAccountId: account._id,
-        toAccountId: toAccountId.trim(),
-        amount: numericAmount,
-      });
-      toast.success("We emailed you a verification code");
-      setCode("");
-      setView("otp");
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setSending(false);
+  // Step 1: move to the password step (or nudge the user to set one first).
+  function proceed() {
+    if (!canContinue) return;
+    if (!hasTransferPassword) {
+      toast.error("Set a transfer password first to send money");
+      onClose();
+      onManagePassword?.();
+      return;
     }
+    setPassword("");
+    setShowPassword(false);
+    setView("password");
   }
 
-  // Step 2: verify the code and perform the transfer.
-  async function confirmTransfer(value) {
-    const finalCode = value || code;
-    if (finalCode.length !== 6 || sending) return;
+  // Step 2: verify with the transfer password and perform the transfer.
+  async function confirmTransfer() {
+    if (!password || sending) return;
     setSending(true);
     try {
       await api.transfer({
         fromAccountId: account._id,
         toAccountId: toAccountId.trim(),
         amount: numericAmount,
-        otp: finalCode,
+        transferPassword: password,
         // A fresh key per send makes each transfer safely retryable.
         idempotencyKey: crypto.randomUUID(),
       });
@@ -111,23 +129,9 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
       setView("success");
     } catch (err) {
       toast.error(err.message);
-      setCode("");
+      setPassword("");
     } finally {
       setSending(false);
-    }
-  }
-
-  async function resendCode() {
-    try {
-      await api.requestTransferOtp({
-        fromAccountId: account._id,
-        toAccountId: toAccountId.trim(),
-        amount: numericAmount,
-      });
-      toast.success("New code sent");
-      setCode("");
-    } catch (err) {
-      toast.error(err.message);
     }
   }
 
@@ -142,7 +146,7 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
         >
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="scrim absolute inset-0 backdrop-blur-sm"
             onClick={onClose}
           />
 
@@ -152,29 +156,29 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
-            className="relative z-10 w-full max-w-sm overflow-hidden rounded-3xl border border-white/10 bg-ink-900 p-6 shadow-2xl"
+            className="relative z-10 w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-popover p-6 shadow-2xl"
           >
             <div className="mb-5 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {view === "otp" && (
+                {view === "password" && (
                   <button
                     onClick={() => setView("amount")}
-                    className="grid size-8 place-items-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+                    className="grid size-8 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
                   >
                     <ArrowLeft className="size-4" />
                   </button>
                 )}
-                <h2 className="text-base font-semibold text-white">
+                <h2 className="text-base font-semibold">
                   {view === "amount"
                     ? "Send Money"
-                    : view === "otp"
+                    : view === "password"
                       ? "Confirm transfer"
                       : ""}
                 </h2>
               </div>
               <button
                 onClick={onClose}
-                className="grid size-8 place-items-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+                className="grid size-8 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >
                 <X className="size-4" />
               </button>
@@ -184,14 +188,14 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
               <>
                 {/* Recipient */}
                 <div className="mb-6">
-                  <label className="mb-1.5 block text-xs font-medium text-white/50">
+                  <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     Recipient account ID
                   </label>
                   <input
                     value={toAccountId}
                     onChange={(e) => setToAccountId(e.target.value)}
                     placeholder="Paste recipient account _id"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-brand-500/60 focus:bg-white/[0.06]"
+                    className="auth-field w-full rounded-xl border border-border px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/15"
                   />
                 </div>
 
@@ -200,17 +204,17 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
                   <div
                     className={cn(
                       "text-5xl font-bold tracking-tight tabular-nums transition-colors",
-                      overBalance ? "text-red-400" : "text-white",
+                      overBalance ? "text-red-600 dark:text-red-400" : "text-foreground",
                     )}
                   >
-                    <span className="text-white/40">$</span>
+                    <span className="text-muted-foreground">$</span>
                     {amount || "0"}
                   </div>
                 </div>
                 <p
                   className={cn(
                     "mb-6 text-center text-xs",
-                    overBalance ? "text-red-400" : "text-white/50",
+                    overBalance ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
                   )}
                 >
                   {overBalance
@@ -224,58 +228,72 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
                     <button
                       key={key}
                       onClick={() => press(key)}
-                      className="grid h-14 place-items-center rounded-2xl text-2xl font-semibold text-white transition active:scale-95 hover:bg-white/[0.06]"
+                      className="grid h-14 place-items-center rounded-2xl text-2xl font-semibold text-foreground transition hover:bg-muted active:scale-95"
                     >
                       {key === "del" ? <Delete className="size-6" /> : key}
                     </button>
                   ))}
                 </div>
 
-                {/* Continue → request code */}
+                {/* Continue → password step */}
                 <button
-                  onClick={requestCode}
-                  disabled={!canSend}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-white py-3.5 text-sm font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={proceed}
+                  disabled={!canContinue}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {sending ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Send className="size-4" />
-                  )}
-                  {sending ? "Sending code…" : "Continue"}
+                  <Send className="size-4" />
+                  Continue
                 </button>
               </>
-            ) : view === "otp" ? (
+            ) : view === "password" ? (
               <>
-                {/* OTP confirmation */}
-                <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
-                  <p className="text-xs text-white/50">You're sending</p>
-                  <p className="mt-0.5 text-2xl font-bold text-white">
+                {/* Password confirmation */}
+                <div className="auth-field mb-5 rounded-2xl border border-border p-4 text-center">
+                  <p className="text-xs text-muted-foreground">You're sending</p>
+                  <p className="mt-0.5 text-2xl font-bold">
                     {formatMoney(numericAmount, account?.currency)}
                   </p>
-                  <p className="mt-1 truncate font-mono text-xs text-white/40">
+                  <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
                     to {toAccountId.trim()}
                   </p>
                 </div>
 
                 <div className="mb-4 flex flex-col items-center gap-1 text-center">
-                  <MailCheck className="size-6 text-brand-400" />
-                  <p className="text-xs text-white/55">
-                    Enter the 6-digit code we emailed you.
+                  <Lock className="size-6 text-primary" />
+                  <p className="text-xs text-muted-foreground">
+                    Enter your transfer password to authorise this payment.
                   </p>
                 </div>
 
-                <OtpInput
-                  value={code}
-                  onChange={setCode}
-                  onComplete={confirmTransfer}
-                  disabled={sending}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && confirmTransfer()}
+                    autoFocus
+                    autoComplete="off"
+                    placeholder="Transfer password"
+                    className="auth-field w-full rounded-xl border border-border px-3.5 py-3 pr-11 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
 
                 <button
-                  onClick={() => confirmTransfer()}
-                  disabled={code.length !== 6 || sending}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-white py-3.5 text-sm font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={confirmTransfer}
+                  disabled={!password || sending}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {sending ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -285,13 +303,10 @@ export default function SendMoneyModal({ account, open, onClose, onDone }) {
                   {sending ? "Transferring…" : "Confirm & send"}
                 </button>
 
-                <button
-                  onClick={resendCode}
-                  disabled={sending}
-                  className="mt-3 w-full text-center text-xs text-white/50 transition hover:text-white disabled:opacity-50"
-                >
-                  Didn't get it? Resend code
-                </button>
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
+                  <ShieldAlert className="size-3" />
+                  Never share your transfer password with anyone.
+                </p>
               </>
             ) : (
               <SuccessView
@@ -360,7 +375,7 @@ function SuccessView({ amount, to, onDone }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
-        className="mt-5 text-lg font-semibold text-white"
+        className="mt-5 text-lg font-semibold"
       >
         Payment Successful
       </motion.h3>
@@ -369,16 +384,16 @@ function SuccessView({ amount, to, onDone }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.42 }}
-        className="mt-1 text-3xl font-bold tracking-tight text-white"
+        className="mt-1 text-3xl font-bold tracking-tight"
       >
         {amount}
       </motion.p>
 
-      <p className="mt-1 truncate font-mono text-xs text-white/40">to {to}</p>
+      <p className="mt-1 truncate font-mono text-xs text-muted-foreground">to {to}</p>
 
       <button
         onClick={onDone}
-        className="mt-8 w-full rounded-full bg-white py-3.5 text-sm font-semibold text-black transition hover:bg-white/90"
+        className="mt-8 w-full rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
       >
         Done
       </button>
