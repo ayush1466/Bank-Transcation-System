@@ -86,5 +86,5 @@ module.exports = {
     createAccount,
     getUserAccounts,
     getAllAccounts,
-    getAccountBalance
+    getAccountBalance,
 };

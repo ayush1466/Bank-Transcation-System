@@ -1,7 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth.middleware');
 const accountController = require('../controller/account.controller');
-
 const router = express.Router();
 
 
@@ -31,7 +30,6 @@ router.get('/all', authMiddleware.SystemUser, accountController.getAllAccounts);
  * - Protected route, requires authentication
  */
 router.get('/balance/:accountId', authMiddleware.authenticateToken, accountController.getAccountBalance);
-
 
 
 module.exports = router;

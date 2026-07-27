@@ -1,78 +1,12 @@
 const transactionModel = require("../models/transaction.model");
 const ledgerModel = require("../models/ledger.model");
+const accountcontroller = require("../controller/account.controller");
 const accountModel = require("../models/account.model");
 const userModel = require("../models/user.model");
 const emailserivce = require("../services/email.service");
 const otpservice = require("../services/otp.service");
 const mongoose = require("mongoose");
 
-/**
- * POST /api/transactions/request-otp
- * Step 1 of a transfer: lightly validate the transfer and email the sender a
- * code bound to this specific recipient + amount.
- */
-async function requestTransferOtp(req, res) {
-  try {
-    const { fromAccountId, toAccountId, amount } = req.body;
-
-    if (!fromAccountId || !toAccountId || amount === undefined) {
-      return res
-        .status(400)
-        .json({ message: "fromAccountId, toAccountId and amount are required" });
-    }
-
-    const parsedAmount = Number(amount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      return res
-        .status(400)
-        .json({ message: "amount must be a positive number" });
-    }
-
-    const fromaccount = await accountModel.findOne({
-      $or: [{ _id: fromAccountId }, { userId: fromAccountId }],
-    });
-    if (!fromaccount) {
-      return res.status(404).json({ message: "Source account not found" });
-    }
-    if (!fromaccount.userId.equals(req.userId)) {
-      return res
-        .status(403)
-        .json({ message: "You do not own the source account" });
-    }
-
-    const toaccount = await accountModel.findOne({
-      $or: [{ _id: toAccountId }, { userId: toAccountId }],
-    });
-    if (!toaccount) {
-      return res.status(404).json({ message: "Recipient account not found" });
-    }
-    if (fromaccount._id.equals(toaccount._id)) {
-      return res
-        .status(400)
-        .json({ message: "Cannot transfer to the same account" });
-    }
-    if (fromaccount.balance < parsedAmount) {
-      return res.status(400).json({
-        message: `Insufficient balance. Available: ${fromaccount.balance}, Requested: ${parsedAmount}`,
-      });
-    }
-
-    await otpservice.generateAndSend({
-      email: req.user.email,
-      name: req.user.name,
-      purpose: "TRANSFER",
-      // Bind the code to this exact recipient + amount.
-      context: { toAccountId: String(toAccountId), amount: parsedAmount },
-    });
-
-    return res
-      .status(200)
-      .json({ message: `Verification code sent to ${req.user.email}` });
-  } catch (error) {
-    console.error("Failed to send transfer OTP:", error);
-    return res.status(400).json({ message: error.message });
-  }
-}
 
 /**
  * create a new transaction between two accounts
@@ -576,7 +510,6 @@ async function createInitialFundsTransaction(req, res) {
 }
 
 module.exports = {
-  requestTransferOtp,
   createTransaction,
   getUserTransactions,
   createInitialFundsTransaction,

@@ -4,10 +4,7 @@ const authmiddleware = require('../middleware/auth.middleware');
 
 const transaction = express.Router();
  
-// Step 1: email the sender a code bound to this recipient + amount.
-transaction.post('/request-otp', authmiddleware.authenticateToken, transactionController.requestTransferOtp);
 
-// Step 2: create the transfer (requires the emailed OTP in the body).
 transaction.post('/', authmiddleware.authenticateToken, transactionController.createTransaction);
 
 /**
@@ -21,5 +18,6 @@ transaction.get('/', authmiddleware.authenticateToken, transactionController.get
  * - create a new transaction to add initial funds to the system
  */
 transaction.post("/system/initial-funds", authmiddleware.SystemUser, transactionController.createInitialFundsTransaction);
+
 
 module.exports = transaction;
