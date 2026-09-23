@@ -1,16 +1,34 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const connectDB = require("./config/db");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-connectDB();
 const app = express();
+const allowedOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(express.json());
 app.use(cookieParser());
+
+app.get("/healthz", (req, res) => {
+  const databaseReady = mongoose.connection.readyState === 1;
+  res.status(databaseReady ? 200 : 503).json({
+    status: databaseReady ? "ok" : "starting",
+    database: databaseReady ? "connected" : "disconnected",
+  });
+});
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // your frontend dev URL
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
@@ -29,7 +47,5 @@ app.use("/api/auth", authRoutes);
 app.use("/api/accounts", accountRoutes);
 
 app.use("/api/transactions", transactionRoutes);
-
-console.log("App is running");
 
 module.exports = app;

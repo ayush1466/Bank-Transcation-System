@@ -42,12 +42,12 @@ npm install
 # 2. Create your environment file and fill in the values
 cp .env.example .env
 
-# 3. Start the server (listens on port 3000)
-node server.js
+# 3. Start the server (listens on PORT, or 3000 by default)
+npm start
 ```
 
-> There is no `start` script defined yet. You can add one to `package.json`:
-> `"scripts": { "start": "node server.js" }`
+The server waits for MongoDB before listening and exposes `/healthz` for hosting
+platform health checks.
 
 ## Environment variables
 

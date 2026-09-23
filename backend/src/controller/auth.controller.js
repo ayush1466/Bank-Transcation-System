@@ -82,8 +82,14 @@ async function verifyRegisterOtp(req, res) {
         await user.save();
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const isProduction = process.env.NODE_ENV === 'production';
 
-        res.cookie('token', token, { httpOnly: true });
+        res.cookie('token', token, {
+            httpOnly: true,
+            sameSite: isProduction ? 'none' : 'lax',
+            secure: isProduction,
+            path: '/',
+        });
         res.status(201).json({ message: 'User registered successfully', user: { id: user._id, name: user.name, email: user.email, systemUser: user.systemUser, hasTransferPassword: false } });
 
         // Send welcome email (best-effort).
@@ -111,8 +117,14 @@ async function login(req, res) {
         }
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const isProduction = process.env.NODE_ENV === 'production';
 
-        res.cookie('token', token, { httpOnly: true });
+        res.cookie('token', token, {
+            httpOnly: true,
+            sameSite: isProduction ? 'none' : 'lax',
+            secure: isProduction,
+            path: '/',
+        });
 
         res.status(200).json({ message: 'Login successful', user: { id: user._id, name: user.name, email: user.email, systemUser: user.systemUser, hasTransferPassword: !!user.transferPassword } });
     }
@@ -123,7 +135,11 @@ async function login(req, res) {
 }
 
 async function logout(req, res) {
-    res.clearCookie('token');
+    res.clearCookie('token', {
+        path: '/',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production',
+    });
     res.status(200).json({ message: 'Logout successful' });
 }
 
