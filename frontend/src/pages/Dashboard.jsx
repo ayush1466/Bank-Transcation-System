@@ -132,7 +132,7 @@ export default function Dashboard() {
   async function confirmCreateAccount(code) {
     try {
       await api.createAccount({ otp: code });
-      toast.success("Account created");
+      toast.success("Demo ledger created");
       setAcctOtpOpen(false);
       await loadAll();
     } catch (err) {
@@ -166,6 +166,12 @@ export default function Dashboard() {
         onLogout={handleLogout}
         onSystem={() => navigate("/system")}
       />
+
+      <p className="mb-6 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-center text-xs leading-relaxed text-foreground/80">
+        <strong>Educational demo:</strong> balances and entries shown here are for
+        practice only. Ledger Lab is not a bank or payment service; never use
+        real banking credentials, card details, or payment information.
+      </p>
 
       {loading ? (
         <Loader label="Loading your account…" />
@@ -216,7 +222,6 @@ export default function Dashboard() {
           />
           <RequestModal
             account={account}
-            user={user}
             open={requestOpen}
             onClose={() => setRequestOpen(false)}
           />
@@ -304,7 +309,7 @@ function BalanceHero({ account, onSend, onRequest }) {
       <div className="relative">
         <div className="flex items-center gap-2 text-white/70">
           <Wallet className="size-4" />
-          <span className="text-sm font-medium">Total Balance</span>
+          <span className="text-sm font-medium">Practice balance</span>
         </div>
 
         <div className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
@@ -319,13 +324,13 @@ function BalanceHero({ account, onSend, onRequest }) {
             onClick={onSend}
             className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-700 shadow-sm transition hover:bg-white/90 active:translate-y-px"
           >
-            <Send className="size-4" /> Send
+            <Send className="size-4" /> Add demo entry
           </button>
           <button
             onClick={onRequest}
             className="flex items-center gap-2 rounded-full bg-white/15 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/30 backdrop-blur-sm transition hover:bg-white/25 active:translate-y-px"
           >
-            <QrCode className="size-4" /> Request
+            <QrCode className="size-4" /> Share demo ID
           </button>
           <button
             onClick={onSend}
@@ -399,7 +404,7 @@ function TransactionsCard({ transactions, currency, onSend }) {
       className="panel rounded-2xl p-5 sm:p-6"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold">Transactions</h2>
+        <h2 className="font-semibold">Demo entries</h2>
         <span className="text-xs text-muted-foreground">
           {transactions.length} total
         </span>
@@ -410,15 +415,15 @@ function TransactionsCard({ transactions, currency, onSend }) {
           <div className="mb-3 grid size-11 place-items-center rounded-full bg-muted">
             <Send className="size-5 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium">No transactions yet</p>
+          <p className="text-sm font-medium">No demo entries yet</p>
           <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-            Once you send or receive money, it will show up here.
+            Practice entries you create will appear here.
           </p>
           <button
             onClick={onSend}
             className="mt-4 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
           >
-            Send your first payment
+            Add your first demo entry
           </button>
         </div>
       ) : (
@@ -488,10 +493,10 @@ function AccountCard({ account, refreshing, onRefresh }) {
     try {
       await navigator.clipboard.writeText(account._id);
       setCopied(true);
-      toast.success("Account ID copied");
+      toast.success("Demo ledger ID copied");
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Couldn't copy account ID");
+      toast.error("Couldn't copy demo ledger ID");
     }
   }
   return (
@@ -502,13 +507,13 @@ function AccountCard({ account, refreshing, onRefresh }) {
       className="panel rounded-2xl p-5 sm:p-6"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold">Account</h2>
+        <h2 className="font-semibold">Demo ledger</h2>
         <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-400">
           {account.status}
         </span>
       </div>
 
-      <p className="text-xs text-muted-foreground">Account ID</p>
+      <p className="text-xs text-muted-foreground">Demo ledger ID</p>
       <div className="mt-1 flex items-center justify-between gap-2">
         <span className="truncate font-mono text-sm text-foreground/80">
           {account._id.slice(0, 10)}…{account._id.slice(-6)}
@@ -516,7 +521,7 @@ function AccountCard({ account, refreshing, onRefresh }) {
         <button
           onClick={copy}
           className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground transition hover:bg-accent hover:text-foreground"
-          title="Copy full account ID"
+          title="Copy full demo ledger ID"
         >
           {copied ? (
             <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
@@ -566,7 +571,7 @@ function SecurityCard({ hasTransferPassword, onManage }) {
       className="panel rounded-2xl p-5 sm:p-6"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-semibold">Transfer password</h2>
+        <h2 className="font-semibold">Demo authorization password</h2>
         {hasTransferPassword ? (
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-400">
             Set
@@ -584,8 +589,8 @@ function SecurityCard({ hasTransferPassword, onManage }) {
         </div>
         <p className="text-sm text-muted-foreground">
           {hasTransferPassword
-            ? "You'll be asked for this password each time you send money."
-            : "Set a password to protect your transfers. It's required before any money leaves your account."}
+            ? "You'll be asked for this demo password when recording an entry."
+            : "Set a demo password before recording an entry. Do not reuse a real password."}
         </p>
       </div>
 
@@ -594,7 +599,7 @@ function SecurityCard({ hasTransferPassword, onManage }) {
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-muted py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-accent hover:text-foreground"
       >
         <KeyRound className="size-4" />
-        {hasTransferPassword ? "Change transfer password" : "Set transfer password"}
+        {hasTransferPassword ? "Change demo password" : "Set demo password"}
       </button>
     </motion.div>
   );
@@ -611,15 +616,15 @@ function PromoCard({ onSend }) {
     >
       <div className="pointer-events-none absolute -top-8 -right-8 size-32 rounded-full bg-primary/15 blur-2xl" />
       <ShieldCheck className="size-6 text-primary" />
-      <h3 className="mt-3 font-semibold">Instant &amp; secure</h3>
+      <h3 className="mt-3 font-semibold">Practice safely</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Every transfer is verified and double-entry recorded in the ledger.
+        This educational project records fictional practice entries only.
       </p>
       <button
         onClick={onSend}
         className="mt-4 flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
       >
-        <Send className="size-4" /> Send money
+        <Send className="size-4" /> Add demo entry
       </button>
     </motion.div>
   );
@@ -636,9 +641,9 @@ function NoAccount({ creating, onCreate }) {
       <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-primary/10 ring-1 ring-primary/25">
         <PlusCircle className="size-7 text-primary" />
       </div>
-      <h2 className="text-lg font-semibold">No account yet</h2>
+      <h2 className="text-lg font-semibold">No demo ledger yet</h2>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Open your bank account to start receiving and sending money.
+        Create a practice ledger to explore the demonstration workflow.
       </p>
       <button
         onClick={onCreate}
@@ -650,7 +655,7 @@ function NoAccount({ creating, onCreate }) {
         ) : (
           <PlusCircle className="size-4" />
         )}
-        Create account
+        Create demo ledger
       </button>
     </motion.div>
   );

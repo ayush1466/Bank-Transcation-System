@@ -101,7 +101,7 @@ export default function SendMoneyModal({
   function proceed() {
     if (!canContinue) return;
     if (!hasTransferPassword) {
-      toast.error("Set a transfer password first to send money");
+      toast.error("Set a demo password before recording an entry");
       onClose();
       onManagePassword?.();
       return;
@@ -170,9 +170,9 @@ export default function SendMoneyModal({
                 )}
                 <h2 className="text-base font-semibold">
                   {view === "amount"
-                    ? "Send Money"
+                    ? "Add demo entry"
                     : view === "password"
-                      ? "Confirm transfer"
+                      ? "Confirm demo entry"
                       : ""}
                 </h2>
               </div>
@@ -189,12 +189,12 @@ export default function SendMoneyModal({
                 {/* Recipient */}
                 <div className="mb-6">
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                    Recipient account ID
+                    Recipient demo ledger ID
                   </label>
                   <input
                     value={toAccountId}
                     onChange={(e) => setToAccountId(e.target.value)}
-                    placeholder="Paste recipient account _id"
+                    placeholder="Paste recipient demo ledger ID"
                     className="auth-field w-full rounded-xl border border-border px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/15"
                   />
                 </div>
@@ -218,8 +218,8 @@ export default function SendMoneyModal({
                   )}
                 >
                   {overBalance
-                    ? "Amount exceeds your available balance"
-                    : `Your balance: ${formatMoney(balance, account?.currency)} (Available)`}
+                    ? "Amount exceeds the practice balance"
+                    : `Practice balance: ${formatMoney(balance, account?.currency)}`}
                 </p>
 
                 {/* Keypad */}
@@ -249,7 +249,7 @@ export default function SendMoneyModal({
               <>
                 {/* Password confirmation */}
                 <div className="auth-field mb-5 rounded-2xl border border-border p-4 text-center">
-                  <p className="text-xs text-muted-foreground">You're sending</p>
+                  <p className="text-xs text-muted-foreground">Practice entry amount</p>
                   <p className="mt-0.5 text-2xl font-bold">
                     {formatMoney(numericAmount, account?.currency)}
                   </p>
@@ -261,7 +261,7 @@ export default function SendMoneyModal({
                 <div className="mb-4 flex flex-col items-center gap-1 text-center">
                   <Lock className="size-6 text-primary" />
                   <p className="text-xs text-muted-foreground">
-                    Enter your transfer password to authorise this payment.
+                    Enter your demo password to record this practice entry.
                   </p>
                 </div>
 
@@ -273,7 +273,7 @@ export default function SendMoneyModal({
                     onKeyDown={(e) => e.key === "Enter" && confirmTransfer()}
                     autoFocus
                     autoComplete="off"
-                    placeholder="Transfer password"
+                    placeholder="Demo password"
                     className="auth-field w-full rounded-xl border border-border px-3.5 py-3 pr-11 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/15"
                   />
                   <button
@@ -300,12 +300,12 @@ export default function SendMoneyModal({
                   ) : (
                     <Send className="size-4" />
                   )}
-                  {sending ? "Transferring…" : "Confirm & send"}
+                  {sending ? "Recording…" : "Confirm demo entry"}
                 </button>
 
                 <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
                   <ShieldAlert className="size-3" />
-                  Never share your transfer password with anyone.
+                  Never reuse a real password in this demo.
                 </p>
               </>
             ) : (
@@ -377,7 +377,7 @@ function SuccessView({ amount, to, onDone }) {
         transition={{ delay: 0.35 }}
         className="mt-5 text-lg font-semibold"
       >
-        Payment Successful
+        Demo entry recorded
       </motion.h3>
 
       <motion.p

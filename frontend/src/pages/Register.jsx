@@ -80,10 +80,10 @@ export default function Register() {
   return (
     <AuthLayout
       eyebrow={step === "details" ? "Get started" : "Almost there"}
-      title={step === "details" ? "Create your account" : "Verify your email"}
+      title={step === "details" ? "Create a demo profile" : "Verify your email"}
       subtitle={
         step === "details"
-          ? "Open a Bank Ledger account and start transacting in minutes."
+          ? "Create a test profile for this educational ledger demo. Do not use real financial credentials."
           : `Enter the 6-digit code we sent to ${form.email}.`
       }
       footer={

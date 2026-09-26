@@ -7,17 +7,17 @@ import { Check, Copy, QrCode, X } from "lucide-react";
 // Requesting money = sharing your account ID so someone can transfer to you.
 // (There's no dedicated "payment request" backend, so this is the honest,
 // useful version of the mockup's "Request" action.)
-export default function RequestModal({ account, user, open, onClose }) {
+export default function RequestModal({ account, open, onClose }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(account._id);
       setCopied(true);
-      toast.success("Account ID copied");
+      toast.success("Demo ledger ID copied");
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      toast.error("Couldn't copy — please copy it manually");
+      toast.error("Couldn't copy the demo ledger ID — please copy it manually");
     }
   }
 
@@ -53,15 +53,15 @@ export default function RequestModal({ account, user, open, onClose }) {
               <QrCode className="size-7 text-primary" />
             </div>
 
-            <h2 className="text-lg font-semibold">Request money</h2>
+            <h2 className="text-lg font-semibold">Share demo ledger ID</h2>
             <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-              Share your account ID with {user?.name ? "friends" : "anyone"} so
-              they can send money straight to your account.
+              Share this demo ledger ID with a test participant to record a
+              fictional practice entry.
             </p>
 
             <div className="auth-field mt-5 rounded-2xl border border-border p-4">
               <p className="mb-1 text-xs font-medium text-muted-foreground">
-                Your account ID
+                Your demo ledger ID
               </p>
               <p className="break-all font-mono text-sm">
                 {account._id}
@@ -78,7 +78,7 @@ export default function RequestModal({ account, user, open, onClose }) {
                 </>
               ) : (
                 <>
-                  <Copy className="size-4" /> Copy account ID
+                  <Copy className="size-4" /> Copy demo ledger ID
                 </>
               )}
             </button>

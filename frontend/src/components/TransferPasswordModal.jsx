@@ -43,8 +43,8 @@ export default function TransferPasswordModal({
       await api.setTransferPassword({ currentPassword, transferPassword });
       toast.success(
         isChange
-          ? "Transfer password updated"
-          : "Transfer password set — you can now send money",
+          ? "Demo password updated"
+          : "Demo password set — you can now record practice entries",
       );
       onSaved?.();
       onClose();
@@ -82,7 +82,7 @@ export default function TransferPasswordModal({
                   <KeyRound className="size-4 text-primary" />
                 </div>
                 <h2 className="text-base font-semibold">
-                  {isChange ? "Change transfer password" : "Set transfer password"}
+                  {isChange ? "Change demo password" : "Set demo password"}
                 </h2>
               </div>
               <button
@@ -94,20 +94,20 @@ export default function TransferPasswordModal({
             </div>
 
             <p className="mb-5 text-xs text-muted-foreground">
-              This password is required every time you send money. Keep it
-              different from your account password and don't share it.
+              This password authorizes practice entries in Ledger Lab. Use a
+              unique demo password; never reuse a real password.
             </p>
 
             <div className="space-y-3">
               <Field
-                label="Account password"
+                label="Demo profile password"
                 value={currentPassword}
                 onChange={setCurrentPassword}
                 show={show}
-                placeholder="Your login password"
+                placeholder="Your demo profile password"
               />
               <Field
-                label={isChange ? "New transfer password" : "Transfer password"}
+                label={isChange ? "New demo password" : "Demo password"}
                 value={transferPassword}
                 onChange={setTransferPassword}
                 show={show}
@@ -115,7 +115,7 @@ export default function TransferPasswordModal({
               />
               <div>
                 <Field
-                  label="Confirm transfer password"
+                label="Confirm demo password"
                   value={confirm}
                   onChange={setConfirm}
                   show={show}
@@ -149,7 +149,7 @@ export default function TransferPasswordModal({
               ) : (
                 <Lock className="size-4" />
               )}
-              {saving ? "Saving…" : isChange ? "Update password" : "Set password"}
+              {saving ? "Saving…" : isChange ? "Update demo password" : "Set demo password"}
             </button>
           </motion.div>
         </motion.div>

@@ -65,11 +65,11 @@ export default function Login() {
   return (
     <AuthLayout
       eyebrow="Welcome back"
-      title="Sign in to your account"
-      subtitle="Access your balances and move money in a couple of taps."
+      title="Sign in to your demo profile"
+      subtitle="This is an educational project. Use a unique demo password, never one used for a real service."
       footer={
         <>
-          New to Bank Ledger?{" "}
+          New to Ledger Lab?{" "}
           <Link
             to="/register"
             className="font-medium text-primary underline-offset-4 hover:underline"
@@ -177,14 +177,14 @@ export default function Login() {
       <div className="mt-6 flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
         <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-          Protected by OTP
+          Educational demo
         </span>
         <span className="h-px flex-1 bg-border" />
       </div>
 
       <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
-        Transfers are confirmed with an email code and your transfer password —
-        so a stolen login alone can never move your money.
+        Ledger Lab is not a bank or payment service. Do not enter banking,
+        card, or payment credentials here.
       </p>
     </AuthLayout>
   );

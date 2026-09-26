@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import {
   ArrowUpRight,
-  Landmark,
+  BookOpenCheck,
   ShieldCheck,
   Sparkles,
   Wallet,
@@ -14,18 +14,18 @@ const EASE = [0.22, 1, 0.36, 1];
 const HIGHLIGHTS = [
   {
     Icon: Zap,
-    title: "Instant transfers",
-    body: "Money reaches the other account in seconds, any hour of the day.",
+    title: "Practice workflows",
+    body: "Explore sample ledger entries in a controlled demonstration environment.",
   },
   {
     Icon: ShieldCheck,
-    title: "Verified every time",
-    body: "Email OTP and a transfer password guard every rupee that moves.",
+    title: "Built for learning",
+    body: "Use a test profile and a unique demo password while exploring the project.",
   },
   {
     Icon: Wallet,
-    title: "A ledger you can trust",
-    body: "Every debit and credit reconciled, with full history on tap.",
+    title: "Transparent records",
+    body: "Review example debit and credit entries in one place.",
   },
 ];
 
@@ -53,11 +53,11 @@ export default function AuthLayout({
           className="relative flex items-center gap-3"
         >
           <div className="grid size-11 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
-            <Landmark className="size-5" />
+            <BookOpenCheck className="size-5" />
           </div>
           <div className="leading-tight">
-            <p className="text-[15px] font-semibold tracking-tight">Bank Ledger</p>
-            <p className="text-xs text-white/60">Secure transfers, settled instantly</p>
+            <p className="text-[15px] font-semibold tracking-tight">Ledger Lab</p>
+            <p className="text-xs text-white/60">Educational ledger demonstration</p>
           </div>
         </motion.div>
 
@@ -69,7 +69,7 @@ export default function AuthLayout({
             className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur-sm"
           >
             <Sparkles className="size-3.5" />
-            Money that moves at your speed
+            Educational demo
           </motion.span>
 
           <motion.h2
@@ -78,9 +78,9 @@ export default function AuthLayout({
             transition={{ duration: 0.65, delay: 0.14, ease: EASE }}
             className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight xl:text-5xl"
           >
-            Banking that feels
+            A practice ledger
             <br />
-            effortless.
+            for learning.
           </motion.h2>
 
           <motion.p
@@ -89,8 +89,8 @@ export default function AuthLayout({
             transition={{ duration: 0.65, delay: 0.2, ease: EASE }}
             className="mt-4 text-[15px] leading-relaxed text-white/70"
           >
-            Send, request and track money across your accounts — with every
-            transaction verified end to end.
+            Explore a sample ledger workflow with fictional records. This is
+            not a bank, wallet, or payment service.
           </motion.p>
 
           {/* Floating balance mock — pure decoration. */}
@@ -102,7 +102,7 @@ export default function AuthLayout({
           >
             <div className="flex items-center justify-between">
               <p className="text-xs tracking-wide text-white/60 uppercase">
-                Available balance
+                Sample balance
               </p>
               <span className="grid size-7 place-items-center rounded-full bg-white/15">
                 <ArrowUpRight className="size-3.5" />
@@ -151,9 +151,9 @@ export default function AuthLayout({
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 lg:invisible">
             <div className="grid size-9 place-items-center rounded-xl bg-primary/12 ring-1 ring-primary/25">
-              <Landmark className="size-4 text-primary" />
+              <BookOpenCheck className="size-4 text-primary" />
             </div>
-            <p className="text-sm font-semibold tracking-tight">Bank Ledger</p>
+            <p className="text-sm font-semibold tracking-tight">Ledger Lab</p>
           </div>
           <ThemeToggle />
         </header>
@@ -189,7 +189,7 @@ export default function AuthLayout({
 
         <footer className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="size-3.5" />
-          256-bit encrypted · Your data never leaves the ledger
+          Educational demo only — never enter real banking credentials, card details, or payment information
         </footer>
       </main>
     </div>

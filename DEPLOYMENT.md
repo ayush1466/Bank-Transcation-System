@@ -28,7 +28,7 @@ shows Python, it is using the repository root instead of `backend`.
 The repository includes `render.yaml` with these settings. You can deploy from
 that Blueprint, or configure the Web Service manually as shown above.
 
-Set these environment variables in Render. Do not commit their values:
+Set these environment variables in Render   . Do not commit their values:
 
 ```text
 NODE_ENV=production
@@ -53,9 +53,8 @@ Import the same repository as a Vercel project with:
 - Build command: `npm run build`
 - Output directory: `dist`
 
-If Vercel is configured with the repository root (`/`) as its Root Directory,
-the root `vercel.json` automatically runs the equivalent commands from the
-`frontend` folder. The preferred dashboard setting is still `frontend`.
+The Vercel project should use `frontend` as its Root Directory. Commands are
+relative to that directory; do not prefix them with `cd frontend`.
 
 Set this environment variable before building:
 

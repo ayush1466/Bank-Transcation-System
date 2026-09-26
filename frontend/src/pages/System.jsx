@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   ArrowLeft,
   RefreshCw,
-  Banknote,
+  Database,
   Loader2,
   Users,
   Copy,
@@ -112,7 +112,7 @@ function SeedFundsCard({ accounts, onDone }) {
         amount: Number(form.amount),
         idempotencyKey: crypto.randomUUID(),
       });
-      toast.success(`Seeded ${form.amount} into account`);
+      toast.success(`Added ${form.amount} to the demo ledger`);
       setForm({ toAccountId: "", amount: "" });
       onDone?.();
     } catch (err) {
@@ -129,8 +129,8 @@ function SeedFundsCard({ accounts, onDone }) {
       className="panel rounded-2xl bg-linear-to-br from-amber-500/12 via-amber-500/4 to-transparent p-6"
     >
       <div className="mb-5 flex items-center gap-2">
-        <Banknote className="size-4 text-amber-600 dark:text-amber-400" />
-        <h2 className="font-semibold">Seed initial funds</h2>
+        <Database className="size-4 text-amber-600 dark:text-amber-400" />
+        <h2 className="font-semibold">Add demo balance</h2>
         <Badge
           variant="outline"
           className="ml-auto border-amber-500/40 text-amber-700 dark:text-amber-300"
@@ -141,11 +141,11 @@ function SeedFundsCard({ accounts, onDone }) {
 
       <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-[1fr_180px_auto] sm:items-end">
         <div className="space-y-2">
-          <Label htmlFor="toAccountId">Destination account ID</Label>
+          <Label htmlFor="toAccountId">Destination demo ledger ID</Label>
           <Input
             id="toAccountId"
             name="toAccountId"
-            placeholder="Account _id"
+            placeholder="Demo ledger ID"
             value={form.toAccountId}
             onChange={onChange}
             required
@@ -169,7 +169,7 @@ function SeedFundsCard({ accounts, onDone }) {
           {sending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
-            <Banknote className="size-4" />
+            <Database className="size-4" />
           )}
           Seed
         </Button>
@@ -189,7 +189,7 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
     >
       <div className="mb-5 flex items-center gap-2">
         <Users className="size-4 text-primary" />
-        <h2 className="font-semibold">All accounts</h2>
+        <h2 className="font-semibold">All demo ledgers</h2>
         <span className="text-sm text-muted-foreground">({accounts.length})</span>
         <Button
           size="sm"
@@ -214,7 +214,7 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
         </div>
       ) : accounts.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          No accounts yet.
+          No demo ledgers yet.
         </p>
       ) : (
         <div className="overflow-x-auto">
@@ -222,7 +222,7 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
             <thead>
               <tr className="text-left text-muted-foreground">
                 <th className="pb-3 font-medium">Owner</th>
-                <th className="pb-3 font-medium">Account ID</th>
+                <th className="pb-3 font-medium">Demo ledger ID</th>
                 <th className="pb-3 font-medium">Status</th>
                 <th className="pb-3 text-right font-medium">Balance</th>
               </tr>
@@ -270,7 +270,7 @@ function AllAccountsCard({ accounts, loading, onRefresh }) {
 function AccountIdChip({ id }) {
   async function copy() {
     await navigator.clipboard.writeText(id);
-    toast.success("Account ID copied");
+    toast.success("Demo ledger ID copied");
   }
   return (
     <button
